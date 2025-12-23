@@ -116,6 +116,7 @@ See `infra/railway/RAILWAY.md`.
 - `infra/db` database notes
 - `infra/railway` Railway deployment notes
 - `samples/cases` demo presets
+- `docs/ROADMAP.md` future vision and scalability plan
 - `docs` extra documentation
 
 ## License
