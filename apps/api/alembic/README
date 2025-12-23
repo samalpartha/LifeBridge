@@ -1,0 +1,41 @@
+Generic single-database configuration for Alembic.
+
+## Usage
+
+### Create a new migration
+
+```bash
+alembic revision --autogenerate -m "Add new column"
+```
+
+### Apply migrations
+
+```bash
+alembic upgrade head
+```
+
+### Rollback one migration
+
+```bash
+alembic downgrade -1
+```
+
+### See migration history
+
+```bash
+alembic history
+```
+
+### See current version
+
+```bash
+alembic current
+```
+
+## Best Practices
+
+1. Always review auto-generated migrations before applying
+2. Test migrations in development before production
+3. Backup database before running migrations in production
+4. Never edit applied migrations - create new ones instead
+
