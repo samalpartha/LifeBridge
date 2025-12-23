@@ -2,7 +2,7 @@
 set -e
 
 echo "Waiting for database..."
-until python -c "import psycopg; psycopg.connect('$DATABASE_URL')" 2>/dev/null; do
+until python -c "import os, psycopg; psycopg.connect(os.environ.get('DATABASE_URL').replace('+psycopg', ''))" 2>/dev/null; do
   echo "Database is unavailable - sleeping"
   sleep 2
 done

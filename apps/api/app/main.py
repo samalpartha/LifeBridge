@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Generator, List
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile, status
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.orm import Session
@@ -526,8 +526,8 @@ def list_cases(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) ->
     ]
 
 
-@app.delete("/cases/{case_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_case(case_id: str, db: Session = Depends(get_db)) -> None:
+@app.delete("/cases/{case_id}", status_code=status.HTTP_200_OK)
+def delete_case(case_id: str, db: Session = Depends(get_db)) -> dict:
     """Delete a case and all associated data."""
     logger.info("deleting_case", case_id=case_id)
     
@@ -543,6 +543,7 @@ def delete_case(case_id: str, db: Session = Depends(get_db)) -> None:
         db.delete(case)
         db.commit()
         logger.info("case_deleted", case_id=case_id)
+        return {"success": True}
     except Exception as e:
         logger.error("case_deletion_failed", case_id=case_id, error=str(e), exc_info=True)
         db.rollback()
