@@ -634,6 +634,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
             summary="",
         )
         db.add(case)
+        db.flush()
         
         doc_id = str(uuid.uuid4())
         doc = Document(
@@ -644,6 +645,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
             storage_key="demo/demo_letter.txt",
         )
         db.add(doc)
+        db.flush()
         
         demo_text = (
             "Invitation Letter for Family Visit.\n"

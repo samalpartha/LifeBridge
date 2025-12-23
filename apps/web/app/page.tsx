@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { createCase, createDemoPreset } from "./api-client/client";
 import { useRouter } from "next/navigation";
+import { useLanguage } from "./contexts/LanguageContext";
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [title, setTitle] = useState("My LifeBridge Case");
   const [scenario, setScenario] = useState("family_reunion");
   const [error, setError] = useState<string | null>(null);
@@ -64,22 +66,22 @@ export default function Home() {
   const features = [
     {
       icon: "📄",
-      title: "Smart Document Processing",
+      title: t("features.smartDoc"),
       description: "Upload PDFs and images. Our OCR extracts text automatically."
     },
     {
       icon: "🧠",
-      title: "AI-Powered Analysis",
+      title: t("features.aiAnalysis"),
       description: "Get actionable checklists, timelines, and risk assessments."
     },
     {
       icon: "🔗",
-      title: "Evidence Linking",
+      title: t("features.evidence"),
       description: "Every insight links back to source documents for full transparency."
     },
     {
       icon: "⚡",
-      title: "Lightning Fast",
+      title: t("features.fast"),
       description: "Process documents in seconds. Get results instantly."
     }
   ];
@@ -89,10 +91,10 @@ export default function Home() {
       {/* Hero Section */}
       <section className="text-center py-12 animate-fade-in">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-4">
-          Transform Documents into <span className="text-gradient">Action Plans</span>
+          {t("heroTitle")}
         </h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          Upload your cross-border mobility documents. Get AI-powered checklists, timelines, and risk assessments—all with evidence-backed insights.
+          {t("heroSubtitle")}
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <button
@@ -106,17 +108,23 @@ export default function Home() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Processing...
+                {t("processing")}
               </span>
             ) : (
               <>
-                ⚡ Try Demo Now
+                {t("tryDemo")}
               </>
             )}
           </button>
           <a href="#create" className="btn btn-secondary text-lg px-8 py-4">
-            Create New Case
+            {t("createNewCase")}
           </a>
+          <button
+            onClick={() => router.push("/map")}
+            className="btn bg-white text-gray-700 border-gray-200 hover:bg-gray-50 text-lg px-8 py-4"
+          >
+            {t("findEmbassy")}
+          </button>
         </div>
       </section>
 
@@ -141,9 +149,9 @@ export default function Home() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Start New Case</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t("createNewCase")}</h2>
           </div>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -166,11 +174,10 @@ export default function Home() {
                 {scenarios.map((s) => (
                   <label
                     key={s.value}
-                    className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                      scenario === s.value
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                    }`}
+                    className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${scenario === s.value
+                      ? 'border-blue-500 bg-blue-50 shadow-md'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
                   >
                     <input
                       type="radio"
@@ -220,7 +227,7 @@ export default function Home() {
             <p className="text-gray-700">
               Try LifeBridge instantly with a pre-populated case. Perfect for:
             </p>
-            
+
             <ul className="space-y-3">
               {[
                 "🎯 Quick demonstration",
@@ -274,12 +281,12 @@ export default function Home() {
 
       {/* Stats Section */}
       <section className="card bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <h2 className="text-2xl font-bold mb-6 text-center">Why Choose LifeBridge?</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">{t("whyChoose")}</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            { label: "Open Source", value: "100%", description: "MIT Licensed" },
-            { label: "Processing Speed", value: "<10s", description: "Average time" },
-            { label: "Evidence Links", value: "All", description: "Full transparency" }
+            { label: t("openSource"), value: "100%", description: "MIT Licensed" },
+            { label: t("processingSpeed"), value: "<10s", description: "Average time" },
+            { label: t("evidenceLinks"), value: "All", description: "Full transparency" }
           ].map((stat, idx) => (
             <div key={idx} className="text-center">
               <div className="text-4xl font-bold mb-2">{stat.value}</div>

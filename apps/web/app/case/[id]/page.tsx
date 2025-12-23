@@ -4,10 +4,52 @@ import { useEffect, useState } from "react";
 import { analyzeCase, getOutputs, uploadDocument, Outputs } from "../../api-client/client";
 import { useParams, useRouter } from "next/navigation";
 
+function AudioPlayer({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+
+  const speak = () => {
+    if (!text) return;
+
+    if (speaking) {
+      window.speechSynthesis.cancel();
+      setSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.onend = () => setSpeaking(false);
+    setSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  return (
+    <button
+      onClick={speak}
+      className={`btn btn-sm ${speaking ? 'btn-error' : 'btn-primary'} ml-auto`}
+    >
+      {speaking ? (
+        <>
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Stop
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          Listen to Plan
+        </>
+      )}
+    </button>
+  );
+}
+
 function Evidence({ outputs, ids }: { outputs: Outputs; ids: string[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const items = ids.map((id) => outputs.chunks[id]).filter(Boolean);
-  
+
   if (!items.length) {
     return (
       <div className="text-sm text-gray-500 italic">
@@ -15,24 +57,24 @@ function Evidence({ outputs, ids }: { outputs: Outputs; ids: string[] }) {
       </div>
     );
   }
-  
+
   return (
     <div className="mt-3">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
       >
-        <svg 
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`} 
-          fill="none" 
-          viewBox="0 0 24 24" 
+        <svg
+          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-90' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
           stroke="currentColor"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
         <span>View Evidence ({items.length} {items.length === 1 ? 'source' : 'sources'})</span>
       </button>
-      
+
       {isOpen && (
         <div className="mt-3 space-y-2 animate-slide-down">
           {items.map((c, idx) => (
@@ -170,14 +212,14 @@ export default function CasePage() {
       {/* Upload Section */}
       <div className="card bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200">
         <div className="flex items-center mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
           </div>
           <h2 className="text-xl font-bold text-gray-900">Upload Document</h2>
         </div>
-        
+
         <div className="relative">
           <input
             type="file"
@@ -192,9 +234,8 @@ export default function CasePage() {
           />
           <label
             htmlFor="file-upload"
-            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${
-              busy ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 'border-blue-400 bg-white hover:bg-blue-50 hover:border-blue-500'
-            }`}
+            className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer transition-all ${busy ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 'border-blue-400 bg-white hover:bg-blue-50 hover:border-blue-500'
+              }`}
           >
             {uploadProgress ? (
               <div className="text-center">
@@ -215,7 +256,7 @@ export default function CasePage() {
             )}
           </label>
         </div>
-        
+
         <p className="text-sm text-gray-600 mt-3">
           💡 Upload PDFs or images. OCR will extract text automatically, then AI analyzes and generates insights.
         </p>
@@ -246,6 +287,9 @@ export default function CasePage() {
             <div>
               <h3 className="font-bold text-lg text-gray-900 mb-2">Summary</h3>
               <p className="text-gray-700">{outputs.case.summary}</p>
+            </div>
+            <div className="ml-auto pl-4">
+              <AudioPlayer text={outputs.case.summary} />
             </div>
           </div>
         </div>

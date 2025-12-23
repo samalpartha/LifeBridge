@@ -11,23 +11,23 @@
 
 ### B. Global Language & Culture Layer
 *Target*: Radical inclusion.
-- **Real-time Translation**: Integrated translation for all UI and documents in **English, Spanish, Hindi, Arabic, Portuguese**.
-- **Cultural Guidance AI**: Context-aware tooltips explaining cultural norms (e.g., "In this region, attach a photo to the CV").
-- **Audio Support**:
-    - Voice-to-text intake for users with low literacy or precision preference.
-    - Audio synthesis to read out checklists and risks.
+- [x] **Real-time Translation**: Integrated translation for all UI and documents in **English, Spanish, Hindi, Arabic, Portuguese**.
+- [ ] **Cultural Guidance AI**: Context-aware tooltips explaining cultural norms (e.g., "In this region, attach a photo to the CV").
+- [x] **Audio Support**:
+    - [ ] Voice-to-text intake for users with low literacy or precision preference.
+    - [x] Audio synthesis to read out checklists and risks.
 
 ### C. Fintech & Identity Integrity
 *Target*: Trust and financial friction reduction.
-- **Identity Verification**: Integrate **Stripe Identity** or **Onfido** to verify passport authenticity.
-- **International Payments**: Built-in wallet for paying visa fees or relocation stipends via **Stripe Connect** or **Wise API**.
-- **Document Vault**: Zero-Knowledge encrypted storage for sensitive PII (passports, tax IDs).
+- [ ] **Identity Verification**: Integrate **Stripe Identity** or **Onfido** to verify passport authenticity.
+- [ ] **International Payments**: Built-in wallet for paying visa fees or relocation stipends via **Stripe Connect** or **Wise API**.
+- [ ] **Document Vault**: Zero-Knowledge encrypted storage for sensitive PII (passports, tax IDs).
 
 ### D. Location Intelligence (Google Maps)
 *Target*: Navigation and verified physical presence.
-- **Embassy Finder**: Use **Google Places API** to locate the nearest relevant consulate or embassy.
-- **Address Verification**: Use **Google Maps Geocoding API** to validate host addresses (crucial for visa sponsorship letters).
-- **Relocation Visualization**: Interactive maps showing the journey, housing options, and local amenities using **Maps JavaScript API**.
+- [x] **Embassy Finder**: Use **Google Places API** to locate the nearest relevant consulate or embassy.
+- [ ] **Address Verification**: Use **Google Maps Geocoding API** to validate host addresses (crucial for visa sponsorship letters).
+- [ ] **Relocation Visualization**: Interactive maps showing the journey, housing options, and local amenities using **Maps JavaScript API**.
 
 ## 2. Technical Architecture Upgrade
 

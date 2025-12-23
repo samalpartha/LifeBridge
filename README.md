@@ -9,6 +9,9 @@ LifeBridge is an end-to-end, open-source prototype that helps people navigate cr
 - A Postgres database for cases, documents, chunks, decisions, risks, and timeline items.
 - S3-compatible object storage for uploaded files (local MinIO in development).
 - A demo preset called "Family Reunion" to make judging fast.
+- **New**: Voice Support (listen to plans).
+- **New**: Location Intelligence (Find Embassies on Map).
+- **New**: Multi-language Support (English/Spanish toggle).
 
 ## Architecture
 
@@ -32,6 +35,9 @@ LifeBridge uses AI in a way that is visible and testable:
 - Conflict and missing-item detection.
 - Risk register generation with reasons.
 - Evidence-linked citations to extracted text chunks.
+- **Voice Interaction**: Auditory playback of case summaries.
+- **Geospatial Context**: Visual mapping of embassy locations.
+- **Global Reach**: Instant localization (i18n).
 
 This prototype ships with a deterministic rules layer so the demo stays stable. If you set an LLM key, the reasoning step becomes more adaptive and will ask targeted follow-up questions when confidence drops.
 
