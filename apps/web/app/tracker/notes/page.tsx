@@ -6,6 +6,8 @@ import { Save, StickyNote, Calendar } from "lucide-react";
 import { trackerApi, NoteEntry } from "@/features/tracker/api/client";
 import { useLanguage } from "../../contexts/LanguageContext";
 
+import toast from "react-hot-toast";
+
 export default function NotesPage() {
     const [notes, setNotes] = useState<NoteEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -31,6 +33,7 @@ export default function NotesPage() {
             setNotes(data.sort((a, b) => new Date(b.note_date).getTime() - new Date(a.note_date).getTime()));
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load notes");
         } finally {
             setLoading(false);
         }
@@ -47,8 +50,9 @@ export default function NotesPage() {
             });
             setNotes([newNote, ...notes]);
             setTitle(""); setContent("");
+            toast.success("Note saved successfully");
         } catch (e) {
-            alert("Failed to save note");
+            toast.error("Failed to save note");
         } finally {
             setSubmitting(false);
         }

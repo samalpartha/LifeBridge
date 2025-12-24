@@ -70,10 +70,9 @@ class GeminiProvider(LLMProvider):
     def chat(self, message: str, history: List[Dict[str, str]] = []) -> str:
         # Fallback chain for Free Tier resilience
         models_to_try = [
-            'gemini-2.0-flash-exp',
-            'gemini-2.0-flash', 
             'gemini-flash-latest',
-            'gemini-pro-latest'
+            'gemini-2.0-flash',
+            'gemini-2.0-flash-lite'
         ]
 
         for model_name in models_to_try:

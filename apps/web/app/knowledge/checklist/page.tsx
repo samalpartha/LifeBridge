@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CHECKLIST_PATHS, ChecklistPath, ChecklistItem } from "./data";
 import { ArrowRight, CheckCircle, Circle, FolderOpen, Calendar, BookOpen, Upload, Briefcase, GraduationCap, Globe } from "lucide-react";
 import { trackerApi } from "../../../features/tracker/api/client";
@@ -13,6 +13,41 @@ export default function ChecklistPage() {
     const [selectedItem, setSelectedItem] = useState<ChecklistItem | null>(null);
     const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
     const router = useRouter();
+    const hiddenInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Simulate upload
+        const toastId = toast.loading("Uploading document...");
+        setTimeout(() => {
+            toast.dismiss(toastId);
+            toast.success(`Uploaded ${file.name}`);
+            if (selectedItem) {
+                setCompletedItems(prev => new Set(prev).add(selectedItem.id));
+            }
+        }, 1500);
+    };
+
+    const handleExport = () => {
+        toast.promise(
+            new Promise((resolve) => setTimeout(resolve, 1000)),
+            {
+                loading: 'Preparing PDF...',
+                success: () => {
+                    window.print();
+                    return 'Export ready';
+                },
+                error: 'Export failed'
+            }
+        );
+    };
+
+    // Calculate progress
+    const totalSteps = path ? path.sections.flatMap(s => s.items).length : 0;
+    const completedCount = completedItems.size;
+    const progressPercent = totalSteps > 0 ? (completedCount / totalSteps) * 100 : 0;
 
     // Wizard Selection
     if (!path) {
@@ -60,11 +95,10 @@ export default function ChecklistPage() {
         );
     }
 
-    // Dashboard View
     return (
         <div className="min-h-screen bg-white">
             {/* Header */}
-            <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
+            <div className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/knowledge">
@@ -75,9 +109,7 @@ export default function ChecklistPage() {
                         <div>
                             <h1 className="text-xl font-bold text-gray-900">{path.label} Checklist</h1>
                             <div className="flex items-center gap-2 text-sm text-gray-500">
-                                <span className="text-green-600 font-medium">{completedItems.size} completed</span>
-                                <span>•</span>
-                                <span>{path.sections.flatMap(s => s.items).length} total steps</span>
+                                <span className="text-green-600 font-medium">{completedCount} of {totalSteps} completed</span>
                             </div>
                         </div>
                     </div>
@@ -89,15 +121,23 @@ export default function ChecklistPage() {
                             Change Path
                         </button>
                         <button
-                            onClick={() => toast.success("Exporting Checklist to PDF...")}
-                            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition">
+                            onClick={handleExport}
+                            className="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition flex items-center gap-2"
+                        >
                             Export PDF
                         </button>
                     </div>
                 </div>
+                {/* Progress Bar */}
+                <div className="w-full h-1 bg-gray-100">
+                    <div
+                        className="h-full bg-green-500 transition-all duration-500 ease-out"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-80px)]">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-100px)]">
 
                 {/* Left: Sections & Navigation */}
                 <div className="lg:col-span-3 space-y-8 overflow-y-auto pr-2">
@@ -115,9 +155,9 @@ export default function ChecklistPage() {
                                         <button
                                             key={item.id}
                                             onClick={() => setSelectedItem(item)}
-                                            className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-start gap-3 transition ${isSelected
-                                                ? 'bg-blue-50 text-blue-700 font-medium'
-                                                : 'text-gray-600 hover:bg-gray-50'
+                                            className={`w-full text-left px-3 py-3 rounded-r-lg text-sm flex items-start gap-3 transition border-l-4 ${isSelected
+                                                ? 'bg-blue-50 border-blue-600 text-blue-900 font-medium'
+                                                : 'border-transparent text-gray-600 hover:bg-gray-50'
                                                 }`}
                                         >
                                             <div className={`mt-0.5 shrink-0 ${isCompleted ? 'text-green-500' : 'text-gray-300'}`}>
@@ -136,6 +176,14 @@ export default function ChecklistPage() {
                 <div className="lg:col-span-6 bg-white border border-gray-200 rounded-2xl shadow-sm p-8 h-fit">
                     {selectedItem && (
                         <div key={selectedItem.id} className="space-y-8 animate-in fade-in duration-300">
+                            {/* Hidden Input for Uploads */}
+                            <input
+                                type="file"
+                                ref={hiddenInputRef}
+                                className="hidden"
+                                onChange={handleUpload}
+                            />
+
                             <div>
                                 <div className="flex items-center gap-2 mb-4">
                                     <span className={`px-2 py-1 rounded text-xs font-medium uppercase tracking-wide ${selectedItem.type === 'task' ? 'bg-orange-100 text-orange-700' :
@@ -184,6 +232,12 @@ export default function ChecklistPage() {
                             <div className="flex items-center gap-4 pt-4">
                                 <button
                                     onClick={async () => {
+                                        if (selectedItem.type === 'upload') {
+                                            hiddenInputRef.current?.click();
+                                            return;
+                                        }
+
+                                        // Default task logic
                                         try {
                                             await trackerApi.addTask({
                                                 title: selectedItem.title,
@@ -204,12 +258,9 @@ export default function ChecklistPage() {
                                 </button>
 
                                 {selectedItem.type === 'upload' && (
-                                    <button
-                                        onClick={() => router.push('/vault')}
-                                        className="px-6 py-3 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 border border-gray-200 transition"
-                                    >
-                                        Go to Vault
-                                    </button>
+                                    <div className="text-xs text-center text-gray-400 mt-2">
+                                        Supported: PDF, JPG, PNG (Max 10MB)
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -239,6 +290,6 @@ export default function ChecklistPage() {
                 </div>
 
             </div>
-        </div>
+        </div >
     );
 }

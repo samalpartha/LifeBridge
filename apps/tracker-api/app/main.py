@@ -109,6 +109,7 @@ class DocumentEntry(BaseModel):
     category: str
     s3_key: Optional[str] = None
     upload_date: Optional[date] = None
+    case_id: Optional[int] = None
 
 from .models import Document
 
@@ -200,6 +201,7 @@ class TaskEntry(BaseModel):
     status: str = "pending" # pending, in_progress, completed
     priority: str = "medium" # low, medium, high
     linked_entity_id: Optional[str] = None
+    case_id: Optional[int] = None
 
 from .models import Task
 
@@ -209,7 +211,12 @@ def get_tasks(db: Session = Depends(get_db)):
 
 @app.post("/v1/tasks")
 def add_task(entry: TaskEntry, db: Session = Depends(get_db)):
-    db_entry = Task(user_id="mock_user_123", created_at=date.today(), **entry.dict())
+    task_data = entry.dict()
+    # Remove fields not present in the DB model
+    if "linked_entity_id" in task_data:
+        del task_data["linked_entity_id"]
+        
+    db_entry = Task(user_id="mock_user_123", created_at=date.today(), **task_data)
     db.add(db_entry)
     db.commit()
     db.refresh(db_entry)
@@ -222,7 +229,8 @@ def update_task(task_id: int, entry: TaskEntry, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
     
     for key, value in entry.dict().items():
-        setattr(db_task, key, value)
+        if key != "linked_entity_id":
+             setattr(db_task, key, value)
     
     db.commit()
     db.refresh(db_task)
@@ -274,6 +282,29 @@ def add_case(entry: CaseEntry, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_entry)
     return db_entry
+
+@app.put("/v1/cases/{case_id}")
+def update_case(case_id: int, entry: CaseEntry, db: Session = Depends(get_db)):
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+        
+    for key, value in entry.dict().items():
+        setattr(db_case, key, value)
+        
+    db.commit()
+    db.refresh(db_case)
+    return db_case
+
+@app.delete("/v1/cases/{case_id}")
+def delete_case(case_id: int, db: Session = Depends(get_db)):
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    db.delete(db_case)
+    db.commit()
+    return {"message": "Case deleted"}
 
 @app.get("/v1/cases/{case_id}/events")
 def get_case_events(case_id: int, db: Session = Depends(get_db)):

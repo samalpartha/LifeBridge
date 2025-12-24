@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Save, Globe, ExternalLink, Plane, Tag } from "lucide-react";
 import { trackerApi, TravelEntry } from "@/features/tracker/api/client";
 
+import toast from "react-hot-toast";
+
 export default function HistoryPage() {
     const [entries, setEntries] = useState<TravelEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export default function HistoryPage() {
             setEntries(data);
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load travel history");
         } finally {
             setLoading(false);
         }
@@ -56,8 +59,9 @@ export default function HistoryPage() {
             setPurpose("");
             setPort("");
             setAdmissionClass("");
+            toast.success("Travel entry saved");
         } catch (e) {
-            alert("Failed to save entry");
+            toast.error("Failed to save entry");
         } finally {
             setSubmitting(false);
         }

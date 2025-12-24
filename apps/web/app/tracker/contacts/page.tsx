@@ -6,6 +6,8 @@ import { Save, User, Phone, Mail, MapPin } from "lucide-react";
 import { trackerApi, ContactEntry } from "@/features/tracker/api/client";
 import { useLanguage } from "../../contexts/LanguageContext";
 
+import toast from "react-hot-toast";
+
 export default function ContactsPage() {
     const [contacts, setContacts] = useState<ContactEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -29,6 +31,7 @@ export default function ContactsPage() {
             setContacts(data);
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load contacts");
         } finally {
             setLoading(false);
         }
@@ -48,8 +51,9 @@ export default function ContactsPage() {
             setContacts([...contacts, newContact]);
             // Reset
             setName(""); setEmail(""); setPhone(""); setAddress("");
+            toast.success("Contact saved successfully");
         } catch (e) {
-            alert("Failed to save contact");
+            toast.error("Failed to save contact");
         } finally {
             setSubmitting(false);
         }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Folder, Calendar, Clock, ChevronRight } from "lucide-react";
+import { Plus, Folder, Calendar, Clock, ChevronRight, Trash2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { trackerApi, CaseEntry } from "@/features/tracker/api/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -40,14 +41,37 @@ export default function CasesPage() {
     async function handleSave() {
         if (!newItem.title) return;
         try {
-            await trackerApi.addCase(newItem);
+            // Sanitize empty strings to undefined to avoid backend validation errors (pydantic date parsing)
+            const payload = {
+                ...newItem,
+                filing_date: newItem.filing_date || undefined,
+                priority_date: newItem.priority_date || undefined,
+                receipt_number: newItem.receipt_number || undefined
+            };
+
+            await trackerApi.addCase(payload);
             setIsModalOpen(false);
             setNewItem({ title: "", case_type: "I-130", status: "Open", filing_date: "", priority_date: "", receipt_number: "" });
             loadData();
         } catch (e) {
             console.error(e);
+            alert("Failed to add case");
         }
     }
+
+    const handleDelete = async (e: React.MouseEvent, id: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this case?")) return;
+
+        try {
+            await trackerApi.deleteCase(id);
+            setCases(cases.filter(c => c.id !== id));
+            toast.success("Case deleted");
+        } catch (error) {
+            toast.error("Failed to delete case");
+        }
+    };
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -110,6 +134,13 @@ export default function CasesPage() {
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase ${getStatusColor(c.status)}`}>
                                             {c.status}
                                         </span>
+                                        <button
+                                            onClick={(e) => c.id && handleDelete(e, c.id)}
+                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                                            title="Delete Case"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
                                         <ChevronRight className="text-gray-300 group-hover:text-blue-500 transition" />
                                     </div>
                                 </div>

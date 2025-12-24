@@ -32,38 +32,92 @@ The application supports three core workflows:
 
 ## Architecture
 
-- Web: Next.js (TypeScript)
-- API: FastAPI (Python)
-- DB: Postgres
-- Storage: S3-compatible (MinIO locally, Cloudflare R2 or AWS S3 in prod)
+The system follows a modern microservices-inspired architecture, separating core document processing from case management to ensure modularity and scalability.
 
-Data flow:
-1. Web uploads a file to the API.
-2. API stores the raw file in object storage and writes metadata to Postgres.
-3. API extracts text, splits it into chunks, and stores chunk IDs.
-4. API produces checklist items, timeline items, and risks, each with chunk IDs as evidence.
-5. Web renders results and shows "Why" with evidence snippets.
+```mermaid
+graph TD
+    User[User (Browser)]
+    
+    subgraph "Frontend Layer"
+        NextJS[Next.js Web App<br/>(App Router)]
+    end
+    
+    subgraph "Application Layer"
+        CoreAPI[Core API<br/>(AI & Processing)]
+        TrackerAPI[Tracker API<br/>(Case Management)]
+    end
+    
+    subgraph "Data Persistence Layer"
+        CoreDB[(Core DB<br/>Postgres)]
+        TrackerDB[(Tracker DB<br/>Postgres)]
+        ObjectStore[(MinIO<br/>S3 Object Storage)]
+    end
 
-## Meaningful AI
+    User -->|HTTPS| NextJS
+    NextJS -->|REST / Analysis| CoreAPI
+    NextJS -->|REST / CRUD| TrackerAPI
+    
+    CoreAPI -->|Metadata & Risks| CoreDB
+    CoreAPI -->|Raw & Processed Files| ObjectStore
+    
+    TrackerAPI -->|Case Data & History| TrackerDB
+    TrackerAPI -->|Linked Documents| ObjectStore
+```
 
-LifeBridge uses AI in a way that is visible and testable:
-- OCR for images and scanned PDFs.
-- Entity extraction into a normalized schema.
-- Conflict and missing-item detection.
-- Risk register generation with reasons.
-- Evidence-linked citations to extracted text chunks.
-- **Voice Interaction**: Auditory playback of case summaries.
-- **Geospatial Context**: Visual mapping of embassy locations.
-- **Global Reach**: Instant localization (i18n).
+## Tech Stack Overview
 
-This prototype ships with a deterministic rules layer so the demo stays stable. If you set an LLM key, the reasoning step becomes more adaptive and will ask targeted follow-up questions when confidence drops.
+LifeBridge is built with a robust, type-safe, and scalable stack designed for reliability and developer experience.
+
+### 🎨 Frontend (Web)
+*   **Framework**: [Next.js 14](https://nextjs.org/) (App Router, Server Components)
+*   **Language**: TypeScript
+*   **Styling**: Tailwind CSS
+*   **Icons**: Lucide React
+*   **State/Data**: React Hooks, SWR (stale-while-revalidate)
+*   **Animations**: Framer Motion (for smooth interactions)
+
+### 🧠 Backend Services
+*   **Core API (Python)**:
+    *   **Framework**: FastAPI
+    *   **OCR**: PyTesseract / PDFPlumber
+    *   **Processing**: LangChain (for text splitting/chunking)
+    *   **Validation**: Pydantic
+*   **Tracker API (Python)**:
+    *   **Framework**: FastAPI
+    *   **ORM**: SQLAlchemy
+    *   **Schema**: Pydantic
+
+### 💾 Data & Infrastructure
+*   **Databases**: PostgreSQL 16 (Relational Data)
+*   **Storage**: MinIO (Local S3-compatible Object Storage)
+*   **Containerization**: Docker & Docker Compose
+*   **Routing**: Nginx (optional/production)
+
+## Key Features & Details
+
+### 1. Intelligent Document Processing
+LifeBridge doesn't just store files; it "reads" them.
+*   **OCR & Extraction**: Automatically extracts text from scanned PDFs and images.
+*   **Chunking & Indexing**: Breaks down complex legal documents into manageable chunks for analysis.
+*   **Risk Detection**: Identifies potential red flags (e.g., missing dates, inconsistent names) based on deterministic rules.
+
+### 2. Comprehensive Case Management
+A dedicated "Tracker" module acts as the system of record for the user's immigration journey.
+*   **Case Spine**: Centralizes all events, documents, and tasks under a specific Case ID (e.g., "Spouse Visa").
+*   **Timeline View**: Visualizes the entire history of a case, from filing to decision.
+*   **Linked Artifacts**: Uploaded documents are strictly linked to specific cases for organized retrieval.
+
+### 3. Accessible User Experience
+*   **Voice Support**: Integrated auditory playback for case summaries and plans, making the app accessible to users with visual impairments or reading difficulties.
+*   **Interactive Maps**: Direct integration with mapping services to help users locate nearby Embassies and Consulates.
+*   **Multi-language Support**: Seamless toggle between English and Spanish to support diverse user bases.
 
 ## Quickstart
 
 ### 1) Prerequisites
 
 - Docker and Docker Compose installed
-- Ports 3000, 8000, 5432, 9000, 9001 available
+- Ports 3000, 8000, 3100, 5432, 5433, 9000, 9001 available
 
 ### 2) Start the Application
 
@@ -78,7 +132,8 @@ Wait 30-60 seconds for all services to initialize.
 ### 3) Access the Application
 
 - **Web UI**: http://localhost:3000
-- **API docs**: http://localhost:8000/docs
+- **Core API docs**: http://localhost:8000/docs
+- **Tracker API docs**: http://localhost:3100/docs
 - **MinIO Console**: http://localhost:9001 (login: minio / minio12345)
 
 ### 4) Try the Demo
@@ -88,14 +143,7 @@ Wait 30-60 seconds for all services to initialize.
 3. View the generated checklist, timeline, and risks
 4. Click **"Why"** on any item to see evidence
 
-### 5) Upload Your Own Documents
-
-1. Click **"Start a new case"** on the home page
-2. Choose a scenario and create the case
-3. Upload a PDF or image file
-4. View the generated outputs with evidence links
-
-### 6) Stop the Application
+### 5) Stop the Application
 
 ```bash
 docker compose down
@@ -103,52 +151,16 @@ docker compose down
 
 ## Environment variables
 
-For local dev via docker-compose, defaults are provided. For a hosted deployment:
-
-API:
-- DATABASE_URL
-- S3_ENDPOINT
-- S3_BUCKET
-- S3_ACCESS_KEY
-- S3_SECRET_KEY
-- S3_REGION (optional)
-- S3_PUBLIC_BASE_URL (optional)
-- OPENAI_API_KEY (optional)
-
-Web:
-- NEXT_PUBLIC_API_BASE_URL
-
-## Deploy on Railway
-
-Railway works well for:
-- Postgres
-- FastAPI service
-
-Suggested deployment:
-- Railway project with a Postgres plugin.
-- API deployed as a Railway service.
-- Web deployed on Vercel (fastest) or as a second Railway service.
-
-See `infra/railway/RAILWAY.md`.
+For local dev via docker-compose, defaults are provided in the `docker-compose.yml`.
 
 ## Repo structure
 
-- `apps/web` Next.js UI
-- `apps/api` FastAPI service
-- `packages/core` shared types and scoring helpers
-- `infra/db` database notes
-- `infra/railway` Railway deployment notes
-- `samples/cases` demo presets
-- `docs/ROADMAP.md` future vision and scalability plan
-- `docs` extra documentation
-
-## License
-
-MIT. See `LICENSE`.
-
-## Advanced Setup
-
-For development without Docker, see `QUICKSTART.md` for detailed instructions on running services individually.
+- `apps/web`: Next.js frontend application
+- `apps/api`: Core Python/FastAPI service (Document Analysis)
+- `apps/tracker-api`: Tracker Python/FastAPI service (Case Management)
+- `apps/docgen`: Document generation service
+- `data`: Local volume data for Postgres and MinIO
+- `docs`: Documentation and architecture notes
 
 ## License
 

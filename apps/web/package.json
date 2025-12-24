@@ -9,6 +9,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
+    "@heroicons/react": "^2.2.0",
     "@react-google-maps/api": "^2.20.8",
     "@types/leaflet": "^1.9.21",
     "framer-motion": "^11.0.0",

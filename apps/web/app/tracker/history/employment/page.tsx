@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Save, Briefcase } from "lucide-react";
 import { trackerApi, EmploymentEntry } from "@/features/tracker/api/client";
 
+import toast from "react-hot-toast";
+
 export default function EmploymentPage() {
     const [entries, setEntries] = useState<EmploymentEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -28,6 +30,7 @@ export default function EmploymentPage() {
             setEntries(data);
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load employment history");
         } finally {
             setLoading(false);
         }
@@ -47,8 +50,9 @@ export default function EmploymentPage() {
             });
             setEntries([...entries, newEntry]);
             setEmployer(""); setTitle(""); setStartDate(""); setEndDate(""); setCity(""); setState("");
+            toast.success("Employment entry saved");
         } catch (e) {
-            alert("Failed to save entry");
+            toast.error("Failed to save entry");
         } finally {
             setSubmitting(false);
         }

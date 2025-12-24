@@ -5,10 +5,17 @@ import { Plus, CheckCircle, Clock, AlertTriangle, Calendar, Trash2 } from "lucid
 import { trackerApi, TaskEntry } from "../../../features/tracker/api/client";
 import { motion } from "framer-motion";
 
+import toast from "react-hot-toast";
+import ConfirmationModal from "../../components/ConfirmationModal";
+
 export default function TasksPage() {
     const [tasks, setTasks] = useState<TaskEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Delete Confirmation State
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
     // Form State
     const [newItem, setNewItem] = useState<TaskEntry>({
@@ -30,6 +37,7 @@ export default function TasksPage() {
             setTasks(data);
         } catch (error) {
             console.error(error);
+            toast.error("Failed to load tasks");
         } finally {
             setLoading(false);
         }
@@ -42,8 +50,10 @@ export default function TasksPage() {
             setIsModalOpen(false);
             setNewItem({ title: "", description: "", status: "pending", priority: "medium", due_date: "" });
             loadData();
+            toast.success("Task created successfully");
         } catch (e) {
             console.error(e);
+            toast.error("Failed to create task");
         }
     }
 
@@ -54,16 +64,28 @@ export default function TasksPage() {
             loadData();
         } catch (e) {
             console.error(e);
+            toast.error("Failed to update task status");
         }
     }
 
-    async function handleDelete(id: number) {
-        if (!confirm("Are you sure you want to delete this task?")) return;
+    function handleDeleteClick(id: number) {
+        setTaskToDelete(id);
+        setDeleteModalOpen(true);
+    }
+
+    async function handleConfirmDelete() {
+        if (!taskToDelete) return;
         try {
-            await trackerApi.deleteTask(id);
-            loadData();
+            await trackerApi.deleteTask(taskToDelete);
+            setDeleteModalOpen(false); // Close immediately
+            setTaskToDelete(null);
+            setTasks(tasks.filter(t => t.id !== taskToDelete)); // Optimistic delete
+            toast.success("Task deleted successfully");
+            // loadData(); // Optional: reload to sync
         } catch (e) {
             console.error(e);
+            toast.error("Failed to delete task");
+            loadData(); // Revert
         }
     }
 
@@ -131,7 +153,7 @@ export default function TasksPage() {
                                                 {task.priority}
                                             </span>
                                             <button
-                                                onClick={() => task.id && handleDelete(task.id)}
+                                                onClick={() => task.id && handleDeleteClick(task.id)}
                                                 className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
                                             >
                                                 <Trash2 size={14} />
@@ -242,6 +264,16 @@ export default function TasksPage() {
                     </div>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => setDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Task"
+                message="Are you sure you want to delete this task? This cannot be undone."
+                isDangerous={true}
+                confirmText="Delete"
+            />
         </div>
     );
 }

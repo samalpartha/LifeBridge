@@ -171,6 +171,23 @@ export const trackerApi = {
         return res.json();
     },
 
+    updateCase: async (id: number, entry: CaseEntry): Promise<CaseEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        });
+        if (!res.ok) throw new Error('Failed to update case');
+        return res.json();
+    },
+
+    deleteCase: async (id: number): Promise<void> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete case');
+    },
+
     getCaseEvents: async (caseId: number): Promise<CaseEventEntry[]> => {
         const res = await fetch(`${TRACKER_API_BASE}/cases/${caseId}/events`);
         if (!res.ok) throw new Error('Failed to fetch case events');
@@ -239,6 +256,7 @@ export type DocumentEntry = {
     category: string;
     s3_key?: string;
     upload_date?: string;
+    case_id?: number | null;
 };
 
 export type TaskEntry = {

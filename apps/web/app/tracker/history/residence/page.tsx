@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Save, Home } from "lucide-react";
 import { trackerApi, ResidenceEntry } from "@/features/tracker/api/client";
 
+import toast from "react-hot-toast";
+
 export default function ResidencePage() {
     const [entries, setEntries] = useState<ResidenceEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,6 +29,7 @@ export default function ResidencePage() {
             setEntries(data);
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load residence history");
         } finally {
             setLoading(false);
         }
@@ -45,8 +48,9 @@ export default function ResidencePage() {
             });
             setEntries([...entries, newEntry]);
             setAddress(""); setCity(""); setCountry(""); setStartDate(""); setEndDate("");
+            toast.success("Residence entry saved");
         } catch (e) {
-            alert("Failed to save entry");
+            toast.error("Failed to save entry");
         } finally {
             setSubmitting(false);
         }

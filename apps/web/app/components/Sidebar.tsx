@@ -21,49 +21,56 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useAuth } from "../contexts/auth-context";
 import { useLanguage } from "../contexts/LanguageContext";
 
+// Helper for specialized icons not in Lucide default set being used
+function UserGroupIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+    );
+}
+
 export function Sidebar() {
     const pathname = usePathname();
     const { logout, user } = useAuth();
     const { t } = useLanguage();
 
-    const navItems = [
-        { name: t("sidebar.dashboard"), href: "/", icon: LayoutDashboard },
-        { name: t("sidebar.tracker"), href: "/tracker", icon: Globe },
-        { name: "My Cases", href: "/tracker/cases", icon: FolderOpen },
-        { name: t("sidebar.vault"), href: "/vault", icon: FolderOpen },
-        { name: "Travel History", href: "/tracker/history/travel", icon: Globe },
-        { name: t("sidebar.reports"), href: "/tracker/reports", icon: FileText },
-        { name: "Tasks", href: "/tracker/tasks", icon: Calendar },
-        { name: "Knowledge Base", href: "/knowledge", icon: BookOpen },
-        { name: t("sidebar.attorneys"), href: "/attorneys", icon: UserGroupIcon },
-        { name: t("sidebar.resources"), href: "/resources", icon: BookOpen },
-        { name: t("sidebar.embassy"), href: "/map", icon: Map },
-        { name: "Help", href: "/help", icon: HelpCircle },
+    // Grouped Navigation
+    const navGroups = [
+        {
+            title: "Case Workspace",
+            items: [
+                { name: t("sidebar.dashboard") || "Dashboard", href: "/", icon: LayoutDashboard },
+                { name: "My Cases", href: "/tracker/cases", icon: FolderOpen },
+                { name: "Documents", href: "/vault", icon: FileText },
+                { name: "Tasks", href: "/tracker/tasks", icon: Calendar },
+                { name: "Timeline", href: "/tracker/history/travel", icon: History },
+            ]
+        },
+        {
+            title: "Guidance",
+            items: [
+                { name: "Knowledge Base", href: "/knowledge", icon: BookOpen },
+                { name: t("sidebar.attorneys") || "Find Attorneys", href: "/attorneys", icon: UserGroupIcon },
+                { name: t("sidebar.embassy") || "Embassy Finder", href: "/map", icon: Map },
+                { name: "Help", href: "/help", icon: HelpCircle },
+            ]
+        }
     ];
-
-    // Helper for specialized icons not in Lucide default set being used
-    function UserGroupIcon(props: any) {
-        // ... existing SVG ...
-        return (
-            <svg
-                {...props}
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-            >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-        );
-    }
 
     return (
         <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen fixed left-0 top-0 z-50">
@@ -86,23 +93,32 @@ export function Sidebar() {
             </div>
 
             {/* Nav Items */}
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-                {navItems.map((item) => {
-                    const isActive = pathname === item.href;
-                    return (
-                        <Link key={item.href} href={item.href}>
-                            <div
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? "bg-blue-600 text-white shadow-sm"
-                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                                    }`}
-                            >
-                                <item.icon size={20} />
-                                {item.name}
-                            </div>
-                        </Link>
-                    );
-                })}
+            <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
+                {navGroups.map((group) => (
+                    <div key={group.title}>
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3">
+                            {group.title}
+                        </h3>
+                        <div className="space-y-1">
+                            {group.items.map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link key={item.href} href={item.href}>
+                                        <div
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
+                                                ? "bg-blue-600 text-white shadow-sm"
+                                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                                }`}
+                                        >
+                                            <item.icon size={18} />
+                                            {item.name}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
             </nav>
 
             {/* User Footer */}

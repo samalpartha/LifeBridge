@@ -1,18 +1,38 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Calendar, FileText, CheckCircle, Clock, RefreshCw, AlertCircle } from "lucide-react";
+import {
+    ArrowLeft,
+    Calendar,
+    FileText,
+    CheckCircle,
+    Clock,
+    RefreshCw,
+    AlertCircle,
+    X,
+    Edit,
+    Upload,
+    Trash2
+} from "lucide-react";
 import { trackerApi, CaseEntry, CaseEventEntry } from "@/features/tracker/api/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 
-export default function CaseDashboard({ params }: { params: { id: string } }) {
-    const caseId = parseInt(params.id);
+export default function CaseDashboard() {
+    const router = useRouter();
+    const params = useParams();
+    const idParam = params?.id;
+    const caseId = idParam ? parseInt(Array.isArray(idParam) ? idParam[0] : idParam) : 0;
     const [caseData, setCaseData] = useState<CaseEntry | null>(null);
     const [events, setEvents] = useState<CaseEventEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [checkingStatus, setCheckingStatus] = useState(false);
+
+    // Modal States
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
 
     const refreshCase = () => {
         if (caseId) {
@@ -24,6 +44,56 @@ export default function CaseDashboard({ params }: { params: { id: string } }) {
                 setEvents(e);
                 setLoading(false);
             }).catch(console.error);
+        }
+    };
+
+    const handleUpdateCase = async (updatedCase: CaseEntry) => {
+        try {
+            // Sanitize
+            if (updatedCase.filing_date === "") updatedCase.filing_date = undefined;
+            if (updatedCase.priority_date === "") updatedCase.priority_date = undefined;
+
+            await trackerApi.updateCase(caseId, updatedCase);
+            toast.success("Case updated successfully");
+            setIsEditModalOpen(false);
+            refreshCase();
+        } catch (e) {
+            toast.error("Failed to update case");
+        }
+    };
+
+    const handleUploadDoc = async (file: File) => {
+        try {
+            await trackerApi.addDocument({
+                filename: file.name,
+                category: "Case Evidence",
+                case_id: caseId
+            });
+            toast.success("Document linked to case");
+            setIsDocModalOpen(false);
+        } catch (e) {
+            toast.error("Failed to upload document");
+        }
+    };
+
+    const handleDeleteCase = async () => {
+        if (!confirm("Are you sure you want to delete this case? This action cannot be undone.")) return;
+        try {
+            await trackerApi.deleteCase(caseId);
+            toast.success("Case deleted");
+            router.push("/tracker/cases");
+        } catch (e) {
+            toast.error("Failed to delete case");
+        }
+    };
+
+    const handleAddTask = async (task: any) => {
+        try {
+            await trackerApi.addTask(task);
+            toast.success("Task created");
+            setIsTaskModalOpen(false);
+        } catch (e) {
+            toast.error("Failed to create task");
         }
     };
 
@@ -112,6 +182,14 @@ export default function CaseDashboard({ params }: { params: { id: string } }) {
                                 </div>
                             )}
 
+                            {/* Delete Button */}
+                            <button
+                                onClick={handleDeleteCase}
+                                className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+                            >
+                                <Trash2 size={14} /> Delete
+                            </button>
+
                             <div className="text-right text-sm text-gray-500 space-y-1">
                                 {caseData.filing_date && (
                                     <p>Filed: <span className="font-medium text-gray-900">{caseData.filing_date}</span></p>
@@ -165,10 +243,16 @@ export default function CaseDashboard({ params }: { params: { id: string } }) {
                         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                             <FileText size={18} /> Linked Documents
                         </h3>
+                        {/* List Documents? For now just count or empty state */}
                         <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
                             No documents linked.
                             <br />
-                            <button className="text-blue-600 font-medium hover:underline mt-2">Upload Linked Doc</button>
+                            <button
+                                onClick={() => setIsDocModalOpen(true)}
+                                className="text-blue-600 font-medium hover:underline mt-2"
+                            >
+                                Upload Linked Doc
+                            </button>
                         </div>
                     </div>
 
@@ -176,15 +260,122 @@ export default function CaseDashboard({ params }: { params: { id: string } }) {
                         <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                             <CheckCircle size={18} /> Linked Tasks
                         </h3>
+                        {/* List Tasks? For now just count or empty state */}
                         <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded-lg">
                             No active tasks.
                             <br />
-                            <button className="text-blue-600 font-medium hover:underline mt-2">Add Task</button>
+                            <button
+                                onClick={() => setIsTaskModalOpen(true)}
+                                className="text-blue-600 font-medium hover:underline mt-2"
+                            >
+                                Add Task
+                            </button>
                         </div>
                     </div>
                 </div>
 
             </div>
+
+            {/* Edit Case Modal */}
+            {isEditModalOpen && caseData && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-scale-in">
+                        <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                        <h3 className="text-xl font-bold mb-4">Edit Case Details</h3>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            handleUpdateCase({
+                                ...caseData,
+                                receipt_number: formData.get('receipt_number') as string,
+                                filing_date: formData.get('filing_date') as string,
+                                priority_date: formData.get('priority_date') as string,
+                                status: formData.get('status') as string
+                            });
+                        }} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Receipt Number</label>
+                                <input name="receipt_number" defaultValue={caseData.receipt_number || ''} className="w-full border rounded p-2" placeholder="e.g. IOE123..." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Filing Date</label>
+                                <input type="date" name="filing_date" defaultValue={caseData.filing_date} className="w-full border rounded p-2" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Priority Date</label>
+                                <input type="date" name="priority_date" defaultValue={caseData.priority_date} className="w-full border rounded p-2" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Status</label>
+                                <select name="status" defaultValue={caseData.status} className="w-full border rounded p-2">
+                                    <option>Open</option>
+                                    <option>Pending</option>
+                                    <option>Case Received</option>
+                                    <option>Request for Evidence</option>
+                                    <option>Approved</option>
+                                    <option>Closed</option>
+                                </select>
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Document Upload Modal (Reuse Logic) */}
+            {isDocModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-scale-in">
+                        <button onClick={() => setIsDocModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                        <h3 className="text-xl font-bold mb-4">Upload Linked Document</h3>
+                        <div className="space-y-4">
+                            <div className="border-2 border-dashed border-gray-300 rounded p-8 text-center bg-gray-50">
+                                <input type="file" className="hidden" id="doc-upload"
+                                    onChange={(e) => {
+                                        if (e.target.files?.[0]) handleUploadDoc(e.target.files[0]);
+                                    }}
+                                />
+                                <label htmlFor="doc-upload" className="cursor-pointer text-blue-600 font-medium hover:underline">
+                                    Click to select file
+                                </label>
+                                <p className="text-xs text-gray-500 mt-2">PDF, PNG, JPG (Max 10MB)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Task Creation Modal */}
+            {isTaskModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-scale-in">
+                        <button onClick={() => setIsTaskModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                        <h3 className="text-xl font-bold mb-4">Add Linked Task</h3>
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const formData = new FormData(e.currentTarget);
+                            handleAddTask({
+                                title: formData.get('title') as string,
+                                status: 'pending',
+                                priority: 'medium',
+                                case_id: caseId
+                            });
+                        }} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Task Title</label>
+                                <input name="title" required className="w-full border rounded p-2" placeholder="e.g. Gather tax returns" />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-4">
+                                <button type="button" onClick={() => setIsTaskModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
+                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Create Task</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Download } from "lucide-react";
 import { trackerApi, DocumentEntry } from "@/features/tracker/api/client";
+import toast from "react-hot-toast";
 
 export default function DocumentsPage() {
     const [docs, setDocs] = useState<DocumentEntry[]>([]);
@@ -25,6 +26,7 @@ export default function DocumentsPage() {
             setDocs(data);
         } catch (e) {
             console.error(e);
+            toast.error("Failed to load documents");
         } finally {
             setLoading(false);
         }
@@ -54,8 +56,9 @@ export default function DocumentsPage() {
             // Reset file input
             const fileInput = document.getElementById('file-upload') as HTMLInputElement;
             if (fileInput) fileInput.value = '';
+            toast.success("Document uploaded successfully");
         } catch (e) {
-            alert("Failed to upload document");
+            toast.error("Failed to upload document");
         } finally {
             setSubmitting(false);
         }
