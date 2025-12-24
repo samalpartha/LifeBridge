@@ -17,6 +17,7 @@ class Case(Base):
     title: Mapped[str] = mapped_column(String(200))
     scenario: Mapped[str] = mapped_column(String(64))
     summary: Mapped[str] = mapped_column(Text, default="")
+    user_story: Mapped[str] = mapped_column(Text, default="")
 
     documents: Mapped[list["Document"]] = relationship(back_populates="case", cascade="all, delete-orphan")
     chunks: Mapped[list["Chunk"]] = relationship(back_populates="case", cascade="all, delete-orphan")
@@ -37,6 +38,7 @@ class Document(Base):
     storage_key: Mapped[str] = mapped_column(String(512))
 
     case: Mapped[Case] = relationship(back_populates="documents")
+    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
 
 
 class Chunk(Base):
@@ -50,6 +52,7 @@ class Chunk(Base):
     text: Mapped[str] = mapped_column(Text)
 
     case: Mapped[Case] = relationship(back_populates="chunks")
+    document: Mapped[Document] = relationship(back_populates="chunks")
 
 
 class Risk(Base):
@@ -74,6 +77,7 @@ class TimelineItem(Base):
     case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
 
     label: Mapped[str] = mapped_column(String(200))
+    status: Mapped[str] = mapped_column(String(24), default="todo")
     due_date: Mapped[str] = mapped_column(String(32), default="")  # keep string for hackathon simplicity
     owner: Mapped[str] = mapped_column(String(64), default="user")
     notes: Mapped[str] = mapped_column(Text, default="")

@@ -21,6 +21,50 @@ const dictionary = {
             aiAnalysis: "AI-Powered Analysis",
             evidence: "Evidence Linking",
             fast: "Lightning Fast"
+        },
+        case: {
+            checklist: "Checklist",
+            risks: "Risks",
+            timeline: "Timeline",
+            summary: "Summary",
+            tellStory: "Tell Your Story",
+            saveStory: "Save Story",
+            uploadDoc: "Upload Document",
+            reanalyze: "Re-analyze Case"
+        },
+        sidebar: {
+            dashboard: "Dashboard",
+            tracker: "Immigration Tracker",
+            vault: "Evidence Vault",
+            attorneys: "Attorney Network",
+            resources: "Resources",
+            embassy: "Find Embassy"
+        },
+        tracker: {
+            tabs: {
+                travel: "Travel History",
+                employment: "Employment History",
+                residence: "Residence History"
+            },
+            contacts: {
+                title: "Contacts Directory",
+                subtitle: "Manage important contacts for your case.",
+                add: "Add Contact",
+                name: "Name",
+                role: "Role",
+                email: "Email",
+                phone: "Phone",
+                address: "Address",
+                save: "Save Contact"
+            },
+            notes: {
+                title: "Case Notes",
+                subtitle: "Keep track of thoughts, meetings, and important details.",
+                titleField: "Title",
+                date: "Date",
+                content: "Content",
+                save: "Save Note"
+            }
         }
     },
     es: {
@@ -39,6 +83,50 @@ const dictionary = {
             aiAnalysis: "Análisis por IA",
             evidence: "Enlaces de Evidencia",
             fast: "Ultra Rápido"
+        },
+        case: {
+            checklist: "Lista de Verificación",
+            risks: "Riesgos",
+            timeline: "Cronograma",
+            summary: "Resumen",
+            tellStory: "Cuéntanos tu Historia",
+            saveStory: "Guardar Historia",
+            uploadDoc: "Subir Documento",
+            reanalyze: "Reanalizar Caso"
+        },
+        sidebar: {
+            dashboard: "Panel Principal",
+            tracker: "Rastreador de Inmigración",
+            vault: "Bóveda de Evidencia",
+            attorneys: "Red de Abogados",
+            resources: "Recursos",
+            embassy: "Buscar Embajada"
+        },
+        tracker: {
+            tabs: {
+                travel: "Historial de Viajes",
+                employment: "Historial de Empleo",
+                residence: "Historial de Residencia"
+            },
+            contacts: {
+                title: "Directorio de Contactos",
+                subtitle: "Gestiona contactos importantes para tu caso.",
+                add: "Añadir Contacto",
+                name: "Nombre",
+                role: "Rol",
+                email: "Correo Electrónico",
+                phone: "Teléfono",
+                address: "Dirección",
+                save: "Guardar Contacto"
+            },
+            notes: {
+                title: "Notas del Caso",
+                subtitle: "Realiza un seguimiento de pensamientos, reuniones y detalles importantes.",
+                titleField: "Título",
+                date: "Fecha",
+                content: "Contenido",
+                save: "Guardar Nota"
+            }
         }
     }
 };
@@ -47,6 +135,8 @@ interface LanguageContextType {
     language: Language;
     setLanguage: (lang: Language) => void;
     t: (key: string) => string;
+    translatedOutputs: any;
+    translateDynamic: (text: string) => Promise<string>;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -64,8 +154,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         return current;
     };
 
+    const translateDynamic = async (text: string): Promise<string> => {
+        if (language === "en") return text;
+        // avoid circular dependency if possible, but importing lib here is fine
+        const { translateText } = await import("../../lib/translate");
+        return translateText(text, language);
+    };
+
     return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        <LanguageContext.Provider value={{ language, setLanguage, t, translatedOutputs: null, translateDynamic }}>
             {children}
         </LanguageContext.Provider>
     );

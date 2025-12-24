@@ -1,17 +1,114 @@
 "use client";
 
-import { useState } from "react";
-import { createCase, createDemoPreset } from "./api-client/client";
+import { useState, useEffect } from "react";
+import { createCase, createDemoPreset, getCases, deleteCase, CaseOut } from "./api-client/client";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "./contexts/LanguageContext";
+import { useAuth } from "./contexts/auth-context";
+
+function MyCasesList() {
+  const [cases, setCases] = useState<CaseOut[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    loadCases();
+  }, []);
+
+  async function loadCases() {
+    try {
+      const data = await getCases();
+      setCases(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this case?")) return;
+    try {
+      await deleteCase(id);
+      loadCases();
+    } catch (e) {
+      alert("Failed to delete case");
+    }
+  }
+
+  if (loading) return null;
+  if (cases.length === 0) return null;
+
+  return (
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">My Recent Cases</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {cases.map((c) => (
+          <div
+            key={c.id}
+            onClick={() => router.push(`/case/${c.id}`)}
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md cursor-pointer transition-all group relative"
+          >
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 ${c.scenario === 'family_reunion' ? 'bg-pink-100 text-pink-600' :
+              c.scenario === 'job_onboarding' ? 'bg-blue-100 text-blue-600' :
+                'bg-purple-100 text-purple-600'
+              }`}>
+              {c.scenario === 'family_reunion' ? '👨‍👩‍👧‍👦' : c.scenario === 'job_onboarding' ? '💼' : '✈️'}
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+              {c.title || "Untitled Case"}
+            </h3>
+            <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+              {c.summary || "No summary available yet."}
+            </p>
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-gray-400">ID: {c.id.slice(0, 8)}</span>
+              <button
+                onClick={(e) => onDelete(c.id, e)}
+                className="text-red-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
+                title="Delete Case"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
+  const { user, loading } = useAuth();
   const { t } = useLanguage();
   const [title, setTitle] = useState("My LifeBridge Case");
   const [scenario, setScenario] = useState("family_reunion");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <svg className="animate-spin h-10 w-10 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <p className="text-gray-500 font-medium">Loading Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   async function onCreate() {
     setError(null);
@@ -120,6 +217,12 @@ export default function Home() {
             {t("createNewCase")}
           </a>
           <button
+            onClick={() => router.push("/tracker")}
+            className="btn bg-white text-gray-700 border-gray-200 hover:bg-gray-50 text-lg px-8 py-4"
+          >
+            Immigration Tracker
+          </button>
+          <button
             onClick={() => router.push("/map")}
             className="btn bg-white text-gray-700 border-gray-200 hover:bg-gray-50 text-lg px-8 py-4"
           >
@@ -129,6 +232,10 @@ export default function Home() {
       </section>
 
       {/* Features Grid */}
+      <section className="animate-slide-up">
+        <MyCasesList />
+      </section>
+
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-slide-up">
         {features.map((feature, idx) => (
           <div key={idx} className="card hover:scale-105 transition-transform">

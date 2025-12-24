@@ -42,7 +42,22 @@ def extract_text_from_pdf(data: bytes) -> str:
             if t.strip():
                 parts.append(t)
         return _clean("\n".join(parts))
-    except Exception:
+    except Exception as e:
+        print(f"Error reading PDF with pypdf: {e}")
+        return ""
+
+def extract_text_from_scanned_pdf(data: bytes) -> str:
+    try:
+        from pdf2image import convert_from_bytes
+        import pytesseract
+        
+        images = convert_from_bytes(data)
+        text = ""
+        for img in images:
+            text += pytesseract.image_to_string(img) + "\n"
+        return _clean(text)
+    except Exception as e:
+        print(f"Error OCRing scanned PDF: {e}")
         return ""
 
 
@@ -63,6 +78,11 @@ def extract_text(content_type: str, data: bytes) -> ExtractResult:
     text = ""
     if "pdf" in ct:
         text = extract_text_from_pdf(data)
+        if not text or len(text) < 50:  # Fallback if text is empty or very short
+            print("PDF text extraction yielded little/no text. Attempting OCR...")
+            ocr_text = extract_text_from_scanned_pdf(data)
+            if ocr_text:
+                text = ocr_text
     elif any(x in ct for x in ["png", "jpeg", "jpg", "image"]):
         text = extract_text_from_image(data)
 

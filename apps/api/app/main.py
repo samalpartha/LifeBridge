@@ -7,7 +7,7 @@ from typing import Generator, List
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from .db.init_db import init_db
@@ -20,7 +20,10 @@ from .schemas.case import (
     ChunkOut,
     RiskOut,
     TimelineItemOut,
+    CaseUpdateStory,
+    DocumentOut,
 )
+from pydantic import BaseModel
 from .services.extract import extract_text
 from .services.reason import build_reasoning
 from .services.storage import get_store
@@ -215,7 +218,19 @@ def get_case(case_id: str, db: Session = Depends(get_db)) -> CaseOut:
         )
     
     logger.info("case_fetched", case_id=case_id)
-    return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary)
+    return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary, user_story=case.user_story)
+
+
+@app.patch("/cases/{case_id}/story", response_model=CaseOut)
+def update_case_story(case_id: str, payload: CaseUpdateStory, db: Session = Depends(get_db)) -> CaseOut:
+    """Update the user story for a case."""
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    case.user_story = payload.user_story
+    db.commit()
+    return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary, user_story=case.user_story)
 
 
 @app.post("/cases/{case_id}/documents", response_model=dict, status_code=status.HTTP_201_CREATED)
@@ -341,6 +356,27 @@ def upload_document(
         )
 
 
+@app.get("/cases/{case_id}/documents", response_model=List[DocumentOut])
+def list_case_documents(case_id: str, db: Session = Depends(get_db)) -> List[DocumentOut]:
+    """List documents for a specific case."""
+    logger.info("listing_case_documents", case_id=case_id)
+    case = db.get(Case, case_id)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+        
+    docs = db.query(Document).filter(Document.case_id == case_id).order_by(Document.created_at.desc()).all()
+    
+    return [
+        DocumentOut(
+            id=d.id,
+            case_id=d.case_id,
+            filename=d.filename,
+            content_type=d.content_type,
+            created_at=d.created_at.isoformat()
+        ) for d in docs
+    ]
+
+
 @app.post("/cases/{case_id}/analyze", response_model=dict)
 def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
     """Analyze case documents and generate outputs."""
@@ -373,16 +409,16 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
         chunk_texts: List[str] = [c.text for c in chunks]
         logger.info("chunks_loaded", case_id=case_id, count=len(chunks))
         
-        if not chunks:
-            logger.warning("no_chunks_found", case_id=case_id)
+        if not chunks and not case.user_story:
+            logger.warning("no_content_found", case_id=case_id)
             return {
                 "ok": True,
-                "warning": "No documents uploaded yet. Upload documents to analyze.",
+                "warning": "No documents uploaded or story provided yet.",
             }
         
         # Run reasoning
         logger.info("running_reasoning", case_id=case_id, scenario=case.scenario)
-        rr = build_reasoning(case.scenario, chunk_texts)
+        rr = build_reasoning(case.scenario, chunk_texts, user_story=case.user_story or "")
         case.summary = rr.summary
         logger.info(
             "reasoning_completed",
@@ -468,14 +504,27 @@ def get_outputs(case_id: str, db: Session = Depends(get_db)) -> dict:
     timeline = db.query(TimelineItem).filter(TimelineItem.case_id == case_id).all()
     risks = db.query(Risk).filter(Risk.case_id == case_id).all()
     chunks = db.query(Chunk).filter(Chunk.case_id == case_id).all()
+    
+    # Fetch documents to map IDs to filenames
+    documents = db.query(Document).filter(Document.case_id == case_id).all()
+    doc_map = {d.id: d.filename for d in documents}
 
-    chunk_map = {c.id: ChunkOut(id=c.id, document_id=c.document_id, idx=c.idx, text=c.text).model_dump() for c in chunks}
+    chunk_map = {
+        c.id: {
+            "id": c.id,
+            "document_id": c.document_id,
+            "filename": doc_map.get(c.document_id, "Unknown File"),
+            "idx": c.idx,
+            "text": c.text
+        } 
+        for c in chunks
+    }
 
     def split_ids(s: str) -> List[str]:
         return [x for x in (s or "").split(",") if x]
 
     return {
-        "case": CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary).model_dump(),
+        "case": CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary, user_story=case.user_story).model_dump(),
         "checklist": [
             ChecklistItemOut(
                 id=i.id,
@@ -490,6 +539,7 @@ def get_outputs(case_id: str, db: Session = Depends(get_db)) -> dict:
             TimelineItemOut(
                 id=i.id,
                 label=i.label,
+                status=i.status,
                 due_date=i.due_date,
                 owner=i.owner,
                 notes=i.notes,
@@ -670,18 +720,31 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
                 )
             )
         
+        # Populate demo User Story
+        case.user_story = "I am inviting my parent for a visit from Mexico to Canada for 6 weeks during the holidays. I will cover their expenses."
+        db.add(case)
+        db.flush()
+
+        # Trigger Reasoning (Simulated or Real)
+        # For demo speed, we'll insert pre-canned high-quality results
+        # Checklist
+        db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Draft Letter of Invitation", status="done", notes="Include details about accommodation and financial support."))
+        db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Gather Proof of Funds", status="in_progress", notes="Bank statements for the last 4 months."))
+        db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Check Visa Requirements", status="todo", notes="Verify if TRV is needed for Mexico citizens (ETA might be sufficient)."))
+        
+        # Timeline
+        db.add(TimelineItem(id=str(uuid.uuid4()), case_id=case_id, label="Submit Application", due_date="2024-12-01", owner="Alex", notes="Apply 2 months before travel."))
+        db.add(TimelineItem(id=str(uuid.uuid4()), case_id=case_id, label="Travel Window Starts", due_date="2025-01-15", owner="Sam", notes="Planned arrival."))
+
+        # Risks
+        db.add(Risk(id=str(uuid.uuid4()), case_id=case_id, category="Financial", severity="low", statement="Proof of funds might be scrutinized.", reason="Ensure the host's bank statements show stable income."))
+        db.add(Risk(id=str(uuid.uuid4()), case_id=case_id, category="Ties to Home", severity="medium", statement="Visitor must prove intent to return.", reason="Sam should provide proof of employment or property in Mexico."))
+
         db.commit()
         
-        # Analyze the case
-        logger.info("analyzing_demo_preset", case_id=case_id)
-        analyze_case(case_id, db)
-        
         logger.info("demo_preset_created", case_id=case_id)
-        return {
-            "case_id": case_id,
-            "title": "Family Reunion (Demo)",
-            "message": "Demo case created and analyzed successfully",
-        }
+        return {"case_id": case_id, "title": case.title, "message": "Demo case created with insights"}
+
     except Exception as e:
         logger.error("demo_preset_creation_failed", error=str(e), exc_info=True)
         db.rollback()
@@ -807,6 +870,141 @@ def search_cases(
         CaseOut(id=c.id, title=c.title, scenario=c.scenario, summary=c.summary)
         for c in cases
     ]
+
+
+@app.get("/documents", response_model=List[DocumentOut])
+def list_documents(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) -> List[DocumentOut]:
+    """List all documents."""
+    logger.info("listing_documents", skip=skip, limit=limit)
+    docs = db.query(Document).order_by(Document.created_at.desc()).offset(skip).limit(limit).all()
+    
+    return [
+        DocumentOut(
+            id=d.id,
+            case_id=d.case_id,
+            filename=d.filename,
+            content_type=d.content_type,
+            created_at=d.created_at.isoformat()
+        ) for d in docs
+    ]
+
+
+@app.get("/documents/{document_id}/download")
+def download_document(document_id: str, db: Session = Depends(get_db)):
+    """Download a document file."""
+    logger.info("downloading_document", document_id=document_id)
+    doc = db.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    try:
+        store = get_store()
+        
+        # S3 Storage: Redirect to public URL
+        if hasattr(store, "get_download_url"):
+             try:
+                 url = store.get_download_url(doc.storage_key)
+                 # Check if it's an HTTP URL we can redirect to
+                 if url.startswith("http"):
+                     return RedirectResponse(url)
+             except Exception:
+                 pass # Fallback or cleaner error
+        
+        # Local Storage: File Response
+        # Ensure we are using local storage for this endpoint if get_file_path works
+        try:
+             path = store.get_file_path(doc.storage_key)
+             return FileResponse(path, filename=doc.filename, media_type=doc.content_type)
+        except NotImplementedError:
+             # If S3 but failed to get HTTP URL
+             raise HTTPException(status_code=501, detail="Download available only via direct S3 URL.")
+
+    except NotImplementedError:
+        raise HTTPException(status_code=501, detail="Download not supported for this storage backend")
+    except Exception as e:
+        logger.error("download_failed", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to download file")
+
+
+@app.delete("/documents/{document_id}", status_code=status.HTTP_200_OK)
+def delete_document(document_id: str, db: Session = Depends(get_db)) -> dict:
+    """Delete a document file and its record."""
+    doc = db.get(Document, document_id)
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    try:
+        # Delete from storage first
+        store = get_store()
+        try:
+            store.delete(doc.storage_key)
+        except Exception as e:
+            logger.error("storage_deletion_failed", error=str(e))
+            # Continue to delete DB record even if storage delete fails
+            # This prevents "zombie" records that point to nowhere
+
+        # Delete database record
+        db.delete(doc)
+        db.commit()
+        logger.info("document_deleted", document_id=document_id)
+        return {"success": True}
+        
+    except Exception as e:
+        logger.error("document_deletion_failed", error=str(e), exc_info=True)
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to delete document")
+
+
+class ChecklistStatusUpdate(BaseModel):
+    status: str
+
+@app.patch("/checklist/{item_id}/status", response_model=dict)
+def update_checklist_status(
+    item_id: str, 
+    payload: ChecklistStatusUpdate, 
+    db: Session = Depends(get_db)
+) -> dict:
+    """Update the status of a checklist item (e.g. todo -> done)."""
+    logger.info("updating_checklist_status", item_id=item_id, status=payload.status)
+    
+    item = db.get(ChecklistItem, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Checklist item not found")
+        
+    item.status = payload.status
+    db.commit()
+    
+    return {"id": item.id, "status": item.status}
+
+
+@app.patch("/timeline/{item_id}/status", response_model=dict)
+def update_timeline_status(
+    item_id: str, 
+    payload: ChecklistStatusUpdate, 
+    db: Session = Depends(get_db)
+) -> dict:
+    """Update the status of a timeline item."""
+    logger.info("updating_timeline_status", item_id=item_id, status=payload.status)
+    
+    item = db.get(TimelineItem, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Timeline item not found")
+        
+    item.status = payload.status
+    db.commit()
+    
+    return {"id": item.id, "status": item.status}
+
+
+class ChatRequest(BaseModel):
+    message: str
+
+@app.post("/chat")
+def chat_endpoint(payload: ChatRequest):
+    """Chat with the AI assistant."""
+    from .services.llm import generate_chat_response
+    response_text = generate_chat_response(payload.message)
+    return {"response": response_text}
 
 
 def open_bytesio(data: bytes):

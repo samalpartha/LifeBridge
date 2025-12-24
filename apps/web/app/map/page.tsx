@@ -2,100 +2,128 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { EMBASSIES } from "../data/embassies";
+import dynamic from "next/dynamic";
+import { MapPin, Phone, Building2, Globe } from "lucide-react";
 
-// Mock data for the PoC
-const EMBASSIES = [
-    { id: 1, name: "US Embassy", lat: 38.9072, lng: -77.0369, address: "Global Location A" },
-    { id: 2, name: "Consulate of Canada", lat: 40.7128, lng: -74.0060, address: "Global Location B" },
-    { id: 3, name: "UK High Commission", lat: 51.5074, lng: -0.1278, address: "Global Location C" },
-];
+// Reuse the Google Map component
+const AttorneyMap = dynamic(() => import("../components/AttorneyMap"), {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-xl flex items-center justify-center text-gray-400">Loading Map...</div>
+});
 
 export default function MapPage() {
     const router = useRouter();
-    const [search, setSearch] = useState("");
+    const [selectedCountry, setSelectedCountry] = useState("");
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const selectedEmbassy = EMBASSIES.find(e => e.country === selectedCountry);
+
+    // Filter countries for dropdown/search
+    const filteredEmbassies = EMBASSIES.filter(e =>
+        e.country.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 animate-fade-in">
-            <div className="max-w-6xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gray-50 p-6 animate-fade-in flex flex-col">
+            <div className="max-w-6xl w-full mx-auto space-y-6 flex-1 flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                         <button
                             onClick={() => router.push("/")}
-                            className="btn btn-secondary text-sm"
+                            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors shadow-sm text-sm font-medium"
                         >
                             ← Back
                         </button>
-                        <h1 className="text-2xl font-bold text-gray-900">Embassy Finder</h1>
+                        <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                            <Globe className="w-6 h-6 mr-2 text-blue-600" />
+                            World Embassy Finder
+                        </h1>
                     </div>
-                    <div className="text-sm text-gray-500">
-                        Powered by Google Maps Platform
+                    <div className="text-sm text-gray-500 hidden md:block">
+                        Find your country's representation in the USA
                     </div>
                 </div>
 
-                {/* Search Bar */}
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex gap-4">
-                    <input
-                        type="text"
-                        placeholder="Search for an embassy or consulate..."
-                        className="input flex-1"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                    <button className="btn btn-primary">
-                        <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        Search
-                    </button>
+                {/* Selection Area */}
+                <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Select your Country of Citizenship</label>
+                    <select
+                        className="select select-bordered w-full text-lg"
+                        value={selectedCountry}
+                        onChange={(e) => setSelectedCountry(e.target.value)}
+                    >
+                        <option value="" disabled>-- Choose a Country --</option>
+                        {EMBASSIES.sort((a, b) => a.country.localeCompare(b.country)).map((e) => (
+                            <option key={e.country} value={e.country}>{e.country}</option>
+                        ))}
+                    </select>
                 </div>
 
-                {/* Map Container */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-                    {/* List View */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                        <div className="p-4 bg-gray-50 border-b border-gray-200">
-                            <h2 className="font-semibold text-gray-700">Results</h2>
-                        </div>
-                        <div className="overflow-y-auto flex-1 p-2 space-y-2">
-                            {EMBASSIES.filter(e => e.name.toLowerCase().includes(search.toLowerCase())).map(embassy => (
-                                <div key={embassy.id} className="p-4 border border-gray-100 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors group">
-                                    <h3 className="font-medium text-gray-900 group-hover:text-blue-700">{embassy.name}</h3>
-                                    <p className="text-sm text-gray-500">{embassy.address}</p>
-                                    <div className="mt-2 flex items-center text-xs text-blue-600">
-                                        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        View on Map
+                {/* Content Grid */}
+                {selectedEmbassy ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+                        {/* Details Card */}
+                        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 space-y-6 h-fit">
+                            <div>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-1">{selectedEmbassy.country}</h2>
+                                <p className="text-blue-600 font-medium">Embassy in Washington, D.C.</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                                    <MapPin className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="text-sm text-gray-500 uppercase font-bold tracking-wide">Address</p>
+                                        <p className="text-gray-900">{selectedEmbassy.address}</p>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* Map Visual */}
-                    <div className="lg:col-span-2 bg-slate-100 rounded-xl border border-gray-200 flex items-center justify-center relative overflow-hidden group">
-                        {/* Mock Map Background */}
-                        <div className="absolute inset-0 bg-[url('https://maps.gstatic.com/mapfiles/api-3/images/map_error_1.png')] bg-cover opacity-50 grayscale transition-all group-hover:grayscale-0"></div>
-
-                        <div className="relative text-center p-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg max-w-md mx-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg className="w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                                <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                                    <Phone className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="text-sm text-gray-500 uppercase font-bold tracking-wide">Phone Number</p>
+                                        <p className="text-gray-900 text-lg font-mono">{selectedEmbassy.phone}</p>
+                                        <p className="text-xs text-gray-400 mt-1">Tap to call</p>
+                                    </div>
+                                </div>
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Google Maps Integration</h3>
-                            <p className="text-gray-600 mb-6">
-                                This is a placeholder for the Google Maps Embed API.
-                                In the production version, this area will show an interactive map with pins for all the embassies listed on the left.
-                            </p>
-                            <button className="btn btn-primary w-full">
-                                Enable Location Services
-                            </button>
+
+                            <div className="pt-4 border-t border-gray-100">
+                                <button className="w-full btn btn-primary flex items-center justify-center gap-2">
+                                    <Building2 className="w-4 h-4" />
+                                    Visit Official Website
+                                </button>
+                                <p className="text-xs text-gray-400 text-center mt-3">External link to embassy site</p>
+                            </div>
+                        </div>
+
+                        {/* Map View */}
+                        <div className="lg:col-span-2 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden h-[500px] lg:h-auto">
+                            <AttorneyMap
+                                center={[selectedEmbassy.lat, selectedEmbassy.lng]}
+                                attorneys={[{
+                                    id: 1,
+                                    name: `Embassy of ${selectedEmbassy.country}`,
+                                    firm: "Diplomatic Mission",
+                                    address: selectedEmbassy.address,
+                                    location: [selectedEmbassy.lat, selectedEmbassy.lng]
+                                }]}
+                            />
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-10 text-center opacity-75">
+                        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                            <Globe className="w-10 h-10 text-blue-500" />
+                        </div>
+                        <h3 className="text-xl font-bold text-gray-800">Select a Country to Begin</h3>
+                        <p className="text-gray-500 max-w-md mx-auto mt-2">
+                            Choose your citizenship from the dropdown above to find the nearest embassy, contact details, and directions.
+                        </p>
+                    </div>
+                )}
             </div>
         </div>
     );

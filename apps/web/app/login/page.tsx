@@ -1,19 +1,39 @@
 "use client";
 
+import { useAuth } from "@/app/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function LoginPage() {
     const router = useRouter();
+    const { login, socialLogin } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
-    const handleLogin = (provider: string) => {
+    const handleSocialLogin = async (provider: string) => {
+        try {
+            await socialLogin(provider);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setError("");
         setLoading(true);
-        // Simulate login delay
-        setTimeout(() => {
+
+        const formData = new FormData(e.currentTarget);
+        const email = formData.get("email") as string;
+        const password = formData.get("password") as string;
+
+        try {
+            await login(email, password);
+        } catch (err: any) {
+            setError(err.message || "Invalid email or password");
             setLoading(false);
-            router.push("/");
-        }, 1000);
+        }
     };
 
     return (
@@ -29,9 +49,9 @@ export default function LoginPage() {
                 </h2>
                 <p className="mt-2 text-center text-sm text-gray-600">
                     Or{' '}
-                    <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
-                        start your 14-day free trial
-                    </a>
+                    <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+                        create a new account
+                    </Link>
                 </p>
             </div>
 
@@ -42,7 +62,7 @@ export default function LoginPage() {
                         {/* Social Login Buttons */}
                         <div className="grid grid-cols-1 gap-3">
                             <button
-                                onClick={() => handleLogin('google')}
+                                onClick={() => handleSocialLogin('google')}
                                 className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <span className="sr-only">Sign in with Google</span>
@@ -52,7 +72,7 @@ export default function LoginPage() {
                             </button>
 
                             <button
-                                onClick={() => handleLogin('linkedin')}
+                                onClick={() => handleSocialLogin('linkedin')}
                                 className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <span className="sr-only">Sign in with LinkedIn</span>
@@ -62,7 +82,7 @@ export default function LoginPage() {
                             </button>
 
                             <button
-                                onClick={() => handleLogin('x')}
+                                onClick={() => handleSocialLogin('x')}
                                 className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <span className="sr-only">Sign in with X</span>
@@ -72,7 +92,7 @@ export default function LoginPage() {
                             </button>
 
                             <button
-                                onClick={() => handleLogin('facebook')}
+                                onClick={() => handleSocialLogin('facebook')}
                                 className="w-full inline-flex justify-center py-2.5 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 <span className="sr-only">Sign in with Facebook</span>
@@ -93,7 +113,21 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        <form className="space-y-6" action="#" method="POST">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
+                            {error && (
+                                <div className="rounded-md bg-red-50 p-4">
+                                    <div className="flex">
+                                        <div className="flex-shrink-0">
+                                            <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div className="ml-3">
+                                            <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <div>
                                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                     Email address
@@ -150,7 +184,7 @@ export default function LoginPage() {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"
+                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {loading ? 'Signing in...' : 'Sign in'}
                                 </button>

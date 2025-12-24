@@ -13,6 +13,7 @@ class CaseOut(BaseModel):
     title: str
     scenario: str
     summary: str
+    user_story: str = ""
 
 
 class ChecklistItemOut(BaseModel):
@@ -26,6 +27,7 @@ class ChecklistItemOut(BaseModel):
 class TimelineItemOut(BaseModel):
     id: str
     label: str
+    status: str
     due_date: str
     owner: str
     notes: str
@@ -46,3 +48,15 @@ class ChunkOut(BaseModel):
     document_id: str
     idx: int
     text: str
+
+
+class CaseUpdateStory(BaseModel):
+    user_story: str
+
+
+class DocumentOut(BaseModel):
+    id: str
+    case_id: str
+    filename: str
+    content_type: str
+    created_at: str

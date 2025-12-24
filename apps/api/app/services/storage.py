@@ -17,6 +17,12 @@ class ObjectStore:
     def put(self, *, fileobj: BinaryIO, filename: str, content_type: str) -> StoredObject:
         raise NotImplementedError
 
+    def get_file_path(self, key: str) -> str:
+        raise NotImplementedError
+
+    def delete(self, key: str) -> None:
+        raise NotImplementedError
+
 
 class LocalObjectStore(ObjectStore):
     def __init__(self, base_dir: str) -> None:
@@ -34,6 +40,14 @@ class LocalObjectStore(ObjectStore):
         with open(path, "wb") as f:
             f.write(fileobj.read())
         return StoredObject(key=key, url=str(path))
+
+    def get_file_path(self, key: str) -> str:
+        return str(self.base / key)
+
+    def delete(self, key: str) -> None:
+        path = self.base / key
+        if path.exists():
+            path.unlink()
 
 
 class S3ObjectStore(ObjectStore):
@@ -75,6 +89,17 @@ class S3ObjectStore(ObjectStore):
         else:
             url = f"s3://{self.bucket}/{key}"
         return StoredObject(key=key, url=url)
+
+    def get_file_path(self, key: str) -> str:
+        raise NotImplementedError("S3 storage does not support direct file path access. Use download URL.")
+
+    def get_download_url(self, key: str) -> str:
+        if self.public_base_url:
+            return f"{self.public_base_url.rstrip('/')}/{key}"
+        return f"s3://{self.bucket}/{key}"
+
+    def delete(self, key: str) -> None:
+        self.client.delete_object(Bucket=self.bucket, Key=key)
 
 
 def get_store() -> ObjectStore:
