@@ -1,15 +1,28 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Calendar, FileText, Globe, Clock, Plus, Download } from "lucide-react";
+import { Calendar, FileText, Globe, Clock, Plus, Download, CheckCircle, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { trackerApi, TaskEntry } from "../../features/tracker/api/client";
 
 export default function TrackerDashboard() {
+    const [tasks, setTasks] = useState<TaskEntry[]>([]);
+
+    useEffect(() => {
+        trackerApi.getTasks().then(setTasks).catch(console.error);
+    }, []);
+
+    const dueSoon = tasks
+        .filter(t => t.status !== 'completed' && t.due_date)
+        .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())
+        .slice(0, 3);
+
     const stats = [
-        { label: "Days Outside US", value: "14", icon: Globe, color: "bg-blue-500" },
-        { label: "Documents", value: "8", icon: FileText, color: "bg-purple-500" },
-        { label: "Pending Tasks", value: "3", icon: Calendar, color: "bg-orange-500" },
-        { label: "Timeline", value: "On Track", icon: Clock, color: "bg-green-500" },
+        { label: "Active Tasks", value: String(tasks.filter(t => t.status !== 'completed').length), icon: Calendar, color: "bg-blue-500" },
+        { label: "Documents", value: "8", icon: FileText, color: "bg-purple-500" }, // Mock val for now
+        { label: "Pending", value: String(tasks.filter(t => t.status === 'pending').length), icon: Clock, color: "bg-orange-500" },
+        { label: "Timeline", value: "On Track", icon: Globe, color: "bg-green-500" },
     ];
 
     return (
@@ -82,18 +95,29 @@ export default function TrackerDashboard() {
                     </div>
 
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">Missing Documents</h2>
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <AlertCircle size={20} className="text-blue-600" />
+                            Upcoming Deadlines
+                        </h2>
                         <div className="space-y-4">
-                            <div className="flex items-center justify-between p-4 border border-orange-100 bg-orange-50 rounded-lg">
-                                <div className="flex items-center gap-3">
-                                    <FileText className="text-orange-500" size={20} />
-                                    <div>
-                                        <p className="font-medium text-gray-900">Marriage Certificate</p>
-                                        <p className="text-xs text-orange-600">Required for I-130</p>
+                            {dueSoon.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic">No upcoming deadlines.</p>
+                            ) : (
+                                dueSoon.map(task => (
+                                    <div key={task.id} className="flex items-center justify-between p-4 border border-blue-50 bg-blue-50/30 rounded-lg">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${task.priority === 'high' ? 'bg-red-500' : 'bg-blue-500'}`} />
+                                            <div>
+                                                <p className="font-medium text-gray-900 line-through-none">{task.title}</p>
+                                                <p className="text-xs text-blue-600">Due: {task.due_date}</p>
+                                            </div>
+                                        </div>
+                                        <Link href="/tracker/tasks">
+                                            <button className="text-xs bg-white border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">View</button>
+                                        </Link>
                                     </div>
-                                </div>
-                                <button className="text-xs bg-white border border-gray-200 px-3 py-1 rounded hover:bg-gray-50">Upload</button>
-                            </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>

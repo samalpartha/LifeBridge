@@ -18,6 +18,10 @@ const nextConfig = {
         destination: 'http://tracker-api:3100/v1/:path*', // Proxy to Tracker API service name
       },
       {
+        source: '/api/docgen/:path*',
+        destination: 'http://docgen:8000/:path*', // Proxy to DocGen service name
+      },
+      {
         source: '/api/:path*',
         destination: 'http://api:8000/:path*', // Proxy to Python API service name
       },

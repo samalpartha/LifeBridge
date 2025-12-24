@@ -50,7 +50,7 @@ services:
       S3_ACCESS_KEY: minio
       S3_SECRET_KEY: minio12345
       S3_PUBLIC_BASE_URL: http://localhost:9000/lifebridge
-      GOOGLE_API_KEY: AIzaSyADArHeCqGr0jOknEBuf3Qpm0AWArjOSdc
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
     volumes:
       - ./apps/api:/app
     ports:
@@ -106,5 +106,16 @@ services:
       - "3100:3100"
     depends_on:
       tracker-db:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
+
+  docgen:
+    build:
+      context: ./apps/docgen
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+
+networks:
+  lifebridge-network:
+    driver: bridge

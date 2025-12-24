@@ -28,6 +28,7 @@ from .services.extract import extract_text
 from .services.reason import build_reasoning
 from .services.storage import get_store
 from .services.export import export_case_json, export_case_markdown
+from .routers import knowledge
 from .utils.logger import configure_logging, get_logger
 
 # Configure logging
@@ -50,6 +51,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.include_router(knowledge.router) # Knowledge base routes
 
 # CORS configuration
 allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
@@ -152,7 +155,8 @@ def health() -> dict:
     try:
         # Check database connection
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            from sqlalchemy import text
+            conn.execute(text("SELECT 1"))
         db_status = "healthy"
     except Exception as e:
         logger.error("health_check_db_failed", error=str(e))

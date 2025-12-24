@@ -36,6 +36,7 @@ const dictionary = {
             dashboard: "Dashboard",
             tracker: "Immigration Tracker",
             vault: "Evidence Vault",
+            reports: "Reports & Documents",
             attorneys: "Attorney Network",
             resources: "Resources",
             embassy: "Find Embassy"
@@ -98,6 +99,7 @@ const dictionary = {
             dashboard: "Panel Principal",
             tracker: "Rastreador de Inmigración",
             vault: "Bóveda de Evidencia",
+            reports: "Reportes y Documentos",
             attorneys: "Red de Abogados",
             resources: "Recursos",
             embassy: "Buscar Embajada"

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Save, Globe } from "lucide-react";
+import { Save, Globe, ExternalLink, Plane, Tag } from "lucide-react";
 import { trackerApi, TravelEntry } from "@/features/tracker/api/client";
 
 export default function HistoryPage() {
@@ -14,6 +14,8 @@ export default function HistoryPage() {
     const [entryDate, setEntryDate] = useState("");
     const [exitDate, setExitDate] = useState("");
     const [purpose, setPurpose] = useState("");
+    const [port, setPort] = useState("");
+    const [admissionClass, setAdmissionClass] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -42,7 +44,9 @@ export default function HistoryPage() {
                 country,
                 entry_date: entryDate,
                 exit_date: exitDate || undefined,
-                purpose
+                purpose,
+                port_of_entry: port,
+                class_of_admission: admissionClass
             });
             setEntries([...entries, newEntry]); // Optimistic update
             // Reset form
@@ -50,6 +54,8 @@ export default function HistoryPage() {
             setEntryDate("");
             setExitDate("");
             setPurpose("");
+            setPort("");
+            setAdmissionClass("");
         } catch (e) {
             alert("Failed to save entry");
         } finally {
@@ -59,10 +65,27 @@ export default function HistoryPage() {
 
     return (
         <div className="space-y-8">
+            {/* I-94 Retrieval CTA */}
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 className="text-blue-900 font-bold text-lg mb-1">Official I-94 Record</h3>
+                    <p className="text-blue-700 text-sm">Need your official travel history? Retrieve it directly from the CBP website.</p>
+                </div>
+                <a
+                    href="https://i94.cbp.dhs.gov/I94/#/history-search"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition flex items-center gap-2 shadow-sm whitespace-nowrap"
+                >
+                    Retrieve I-94
+                    <ExternalLink size={16} />
+                </a>
+            </div>
+
             {/* Input Form */}
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                <h2 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">Add New Trip</h2>
-                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h2 className="text-sm font-semibold text-gray-900 mb-6 uppercase tracking-wider border-b pb-2">Add New Trip</h2>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">Country</label>
                         <input
@@ -74,12 +97,32 @@ export default function HistoryPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Purpose</label>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Purpose / Visa Type</label>
                         <input
                             type="text"
                             value={purpose}
                             onChange={(e) => setPurpose(e.target.value)}
-                            placeholder="e.g. Vacation, Business"
+                            placeholder="e.g. Tourist (B2), H1B"
+                            className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Port of Entry</label>
+                        <input
+                            type="text"
+                            value={port}
+                            onChange={(e) => setPort(e.target.value)}
+                            placeholder="e.g. SFO, JFK"
+                            className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Class of Admission</label>
+                        <input
+                            type="text"
+                            value={admissionClass}
+                            onChange={(e) => setAdmissionClass(e.target.value)}
+                            placeholder="e.g. B2, H1B"
                             className="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
@@ -138,7 +181,21 @@ export default function HistoryPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-medium text-gray-900">{entry.country}</h3>
-                                    <p className="text-xs text-gray-500">{entry.purpose}</p>
+                                    <div className="flex flex-wrap gap-2 mt-1">
+                                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded flex items-center gap-1">
+                                            <Tag size={10} /> {entry.purpose}
+                                        </span>
+                                        {entry.port_of_entry && (
+                                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded flex items-center gap-1">
+                                                <Plane size={10} /> {entry.port_of_entry}
+                                            </span>
+                                        )}
+                                        {entry.class_of_admission && (
+                                            <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded border border-purple-100">
+                                                {entry.class_of_admission}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             <div className="text-right">

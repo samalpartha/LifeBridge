@@ -6,6 +6,8 @@ export type TravelEntry = {
     entry_date: string;
     exit_date?: string;
     purpose: string;
+    port_of_entry?: string;
+    class_of_admission?: string;
 };
 
 export type EmploymentEntry = {
@@ -144,6 +146,90 @@ export const trackerApi = {
         });
         if (!res.ok) throw new Error('Failed to add note');
         return res.json();
+    },
+
+    // Cases
+    getCases: async (): Promise<CaseEntry[]> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases`);
+        if (!res.ok) throw new Error('Failed to fetch cases');
+        return res.json();
+    },
+
+    getCase: async (id: number): Promise<CaseEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch case');
+        return res.json();
+    },
+
+    addCase: async (entry: CaseEntry): Promise<CaseEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        });
+        if (!res.ok) throw new Error('Failed to add case');
+        return res.json();
+    },
+
+    getCaseEvents: async (caseId: number): Promise<CaseEventEntry[]> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${caseId}/events`);
+        if (!res.ok) throw new Error('Failed to fetch case events');
+        return res.json();
+    },
+
+    addCaseEvent: async (caseId: number, entry: CaseEventEntry): Promise<CaseEventEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${caseId}/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        });
+        if (!res.ok) throw new Error('Failed to add case event');
+        return res.json();
+    },
+
+    checkCaseStatus: async (caseId: number): Promise<any> => {
+        const res = await fetch(`${TRACKER_API_BASE}/cases/${caseId}/status`, {
+            method: 'POST',
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || 'Failed to check status');
+        }
+        return res.json();
+    },
+
+    // Tasks
+    getTasks: async (): Promise<TaskEntry[]> => {
+        const res = await fetch(`${TRACKER_API_BASE}/tasks`);
+        if (!res.ok) throw new Error('Failed to fetch tasks');
+        return res.json();
+    },
+
+    addTask: async (entry: TaskEntry): Promise<TaskEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/tasks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        });
+        if (!res.ok) throw new Error('Failed to add task');
+        return res.json();
+    },
+
+    updateTask: async (id: number, entry: TaskEntry): Promise<TaskEntry> => {
+        const res = await fetch(`${TRACKER_API_BASE}/tasks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(entry),
+        });
+        if (!res.ok) throw new Error('Failed to update task');
+        return res.json();
+    },
+
+    deleteTask: async (id: number): Promise<void> => {
+        const res = await fetch(`${TRACKER_API_BASE}/tasks/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete task');
     }
 };
 
@@ -153,4 +239,34 @@ export type DocumentEntry = {
     category: string;
     s3_key?: string;
     upload_date?: string;
+};
+
+export type TaskEntry = {
+    id?: number;
+    title: string;
+    description?: string;
+    due_date?: string;
+    status: 'pending' | 'in_progress' | 'completed';
+    priority: 'low' | 'medium' | 'high';
+    created_at?: string;
+    case_id?: number | null;
+};
+
+export type CaseEntry = {
+    id?: number;
+    title: string;
+    case_type: string;
+    status: string;
+    filing_date?: string;
+    priority_date?: string;
+    receipt_number?: string;
+};
+
+export type CaseEventEntry = {
+    id?: number;
+    case_id?: number;
+    event_date: string;
+    title: string;
+    description?: string;
+    event_type: string;
 };

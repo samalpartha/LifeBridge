@@ -12,7 +12,10 @@ import {
     History,
     Settings,
     LogOut,
-    Globe
+    Globe,
+    FileText,
+    Calendar,
+    HelpCircle
 } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useAuth } from "../contexts/auth-context";
@@ -26,10 +29,16 @@ export function Sidebar() {
     const navItems = [
         { name: t("sidebar.dashboard"), href: "/", icon: LayoutDashboard },
         { name: t("sidebar.tracker"), href: "/tracker", icon: Globe },
+        { name: "My Cases", href: "/tracker/cases", icon: FolderOpen },
         { name: t("sidebar.vault"), href: "/vault", icon: FolderOpen },
+        { name: "Travel History", href: "/tracker/history/travel", icon: Globe },
+        { name: t("sidebar.reports"), href: "/tracker/reports", icon: FileText },
+        { name: "Tasks", href: "/tracker/tasks", icon: Calendar },
+        { name: "Knowledge Base", href: "/knowledge", icon: BookOpen },
         { name: t("sidebar.attorneys"), href: "/attorneys", icon: UserGroupIcon },
         { name: t("sidebar.resources"), href: "/resources", icon: BookOpen },
         { name: t("sidebar.embassy"), href: "/map", icon: Map },
+        { name: "Help", href: "/help", icon: HelpCircle },
     ];
 
     // Helper for specialized icons not in Lucide default set being used

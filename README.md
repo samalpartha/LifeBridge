@@ -13,6 +13,23 @@ LifeBridge is an end-to-end, open-source prototype that helps people navigate cr
 - **New**: Location Intelligence (Find Embassies on Map).
 - **New**: Multi-language Support (English/Spanish toggle).
 
+## Target Audience
+
+LifeBridge is built for anyone navigating complex immigration bureaucracies:
+
+- **Students**: Managing F-1 visas, OPT applications, and university admissions.
+- **Professionals**: Tracking H-1B, O-1, or Green Card timelines and employer documents.
+- **Global Citizens**: Digital nomads and travelers organizing visas and travel history.
+- **Families**: Coordinating marriage-based adjustments or sponsoring relatives.
+
+## User Journeys
+
+The application supports three core workflows:
+
+1.  **Discovery**: Users start with the **Checklist** wizard to identify their specific path and requirements.
+2.  **Management**: Users convert checklist steps into **Tasks**, track their **Case Status**, and maintain a digital **Vault** of verified documents.
+3.  **Support**: Users can locate embassies via the **Map** or connect with verified **Attorneys** for legal assistance.
+
 ## Architecture
 
 - Web: Next.js (TypeScript)

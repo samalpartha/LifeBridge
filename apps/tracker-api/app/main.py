@@ -36,6 +36,8 @@ class TravelEntry(BaseModel):
     entry_date: date
     exit_date: Optional[date] = None
     purpose: str
+    port_of_entry: Optional[str] = None
+    class_of_admission: Optional[str] = None
 
 # --- Endpoints ---
 @app.get("/")
@@ -189,3 +191,150 @@ def add_note(entry: NoteEntry, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_entry)
     return db_entry
+
+# --- Tasks ---
+class TaskEntry(BaseModel):
+    title: str
+    description: Optional[str] = None
+    due_date: Optional[date] = None
+    status: str = "pending" # pending, in_progress, completed
+    priority: str = "medium" # low, medium, high
+    linked_entity_id: Optional[str] = None
+
+from .models import Task
+
+@app.get("/v1/tasks")
+def get_tasks(db: Session = Depends(get_db)):
+    return db.query(Task).filter(Task.user_id == "mock_user_123").all()
+
+@app.post("/v1/tasks")
+def add_task(entry: TaskEntry, db: Session = Depends(get_db)):
+    db_entry = Task(user_id="mock_user_123", created_at=date.today(), **entry.dict())
+    db.add(db_entry)
+    db.commit()
+    db.refresh(db_entry)
+    return db_entry
+
+@app.put("/v1/tasks/{task_id}")
+def update_task(task_id: int, entry: TaskEntry, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == "mock_user_123").first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    for key, value in entry.dict().items():
+        setattr(db_task, key, value)
+    
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+@app.delete("/v1/tasks/{task_id}")
+def delete_task(task_id: int, db: Session = Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == "mock_user_123").first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    db.delete(db_task)
+    db.commit()
+    return {"message": "Task deleted"}
+
+# --- Cases ---
+class CaseEntry(BaseModel):
+    title: str
+    case_type: str
+    status: str = "Open"
+    filing_date: Optional[date] = None
+    priority_date: Optional[date] = None
+    receipt_number: Optional[str] = None
+
+class CaseEventEntry(BaseModel):
+    event_date: date
+    title: str
+    description: Optional[str] = None
+    event_type: str
+
+from .models import ImmigrationCase, CaseEvent
+from .services.uscis import get_uscis_service
+
+@app.get("/v1/cases")
+def get_cases(db: Session = Depends(get_db)):
+    return db.query(ImmigrationCase).filter(ImmigrationCase.user_id == "mock_user_123").all()
+
+@app.get("/v1/cases/{case_id}")
+def get_case(case_id: int, db: Session = Depends(get_db)):
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    return db_case
+
+@app.post("/v1/cases")
+def add_case(entry: CaseEntry, db: Session = Depends(get_db)):
+    db_entry = ImmigrationCase(user_id="mock_user_123", **entry.dict())
+    db.add(db_entry)
+    db.commit()
+    db.refresh(db_entry)
+    return db_entry
+
+@app.get("/v1/cases/{case_id}/events")
+def get_case_events(case_id: int, db: Session = Depends(get_db)):
+    return db.query(CaseEvent).filter(CaseEvent.case_id == case_id).order_by(CaseEvent.event_date.desc()).all()
+
+@app.post("/v1/cases/{case_id}/events")
+def add_case_event(case_id: int, entry: CaseEventEntry, db: Session = Depends(get_db)):
+    # Verify case ownership
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+        
+    db_entry = CaseEvent(case_id=case_id, **entry.dict())
+    db.add(db_entry)
+    db.commit()
+    db.refresh(db_entry)
+    return db_entry
+
+@app.post("/v1/cases/{case_id}/status")
+async def check_case_status(case_id: int, db: Session = Depends(get_db)):
+    # 1. Fetch case
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    if not db_case.receipt_number:
+        raise HTTPException(status_code=400, detail="Case has no receipt number")
+
+    # 2. Call USCIS Service
+    from .services.uscis import get_uscis_service
+    service = await get_uscis_service()
+    result = await service.check_status(db_case.receipt_number)
+    
+    # 3. Update case status if valid
+    if result["status"] not in ["Error", "Invalid Receipt", "Unknown"]:
+        # Only update if meaningful
+        db_case.status = result["status"]
+        
+        # Log event
+        existing_event = db.query(CaseEvent).filter(
+            CaseEvent.case_id == case_id, 
+            CaseEvent.title == result["status"],
+            CaseEvent.event_date == date.today()
+        ).first()
+        
+        if not existing_event:
+            new_event = CaseEvent(
+                case_id=case_id,
+                event_date=date.today(),
+                title=result["status"],
+                description=result["detail"],
+                event_type="status_update"
+            )
+            db.add(new_event)
+            
+        db.commit()
+        db.refresh(db_case)
+        
+    return {
+        "case_id": case_id,
+        "receipt": db_case.receipt_number,
+        "uscis_status": result
+    }
+
