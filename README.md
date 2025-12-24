@@ -36,21 +36,21 @@ The system follows a modern microservices-inspired architecture, separating core
 
 ```mermaid
 graph TD
-    User[User (Browser)]
+    User["User (Browser)"]
     
     subgraph "Frontend Layer"
-        NextJS[Next.js Web App<br/>(App Router)]
+        NextJS["Next.js Web App<br/>(App Router)"]
     end
     
     subgraph "Application Layer"
-        CoreAPI[Core API<br/>(AI & Processing)]
-        TrackerAPI[Tracker API<br/>(Case Management)]
+        CoreAPI["Core API<br/>(AI & Processing)"]
+        TrackerAPI["Tracker API<br/>(Case Management)"]
     end
     
     subgraph "Data Persistence Layer"
-        CoreDB[(Core DB<br/>Postgres)]
-        TrackerDB[(Tracker DB<br/>Postgres)]
-        ObjectStore[(MinIO<br/>S3 Object Storage)]
+        CoreDB[("Core DB<br/>Postgres")]
+        TrackerDB[("Tracker DB<br/>Postgres")]
+        ObjectStore[("MinIO<br/>S3 Object Storage")]
     end
 
     User -->|HTTPS| NextJS
