@@ -15,21 +15,15 @@ const nextConfig = {
     return [
       {
         source: '/api/tracker/:path*',
-        destination: process.env.TRACKER_API_URL
-          ? `${process.env.TRACKER_API_URL}/:path*`
-          : 'http://tracker-api:3100/v1/:path*',
+        destination: (process.env.TRACKER_API_URL || process.env.NEXT_PUBLIC_TRACKER_API_URL || 'http://tracker-api:3100').replace(/\/$/, '') + '/v1/:path*',
       },
       {
         source: '/api/docgen/:path*',
-        destination: process.env.DOCGEN_API_URL
-          ? `${process.env.DOCGEN_API_URL}/:path*`
-          : 'http://docgen:8000/:path*',
+        destination: (process.env.DOCGEN_API_URL || 'http://docgen:8000').replace(/\/$/, '') + '/:path*',
       },
       {
         source: '/api/:path*',
-        destination: process.env.NEXT_PUBLIC_API_URL
-          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
-          : 'http://api:8000/:path*',
+        destination: (process.env.NEXT_PUBLIC_API_URL || 'http://api:8000').replace(/\/$/, '') + '/:path*',
       },
     ];
   },
