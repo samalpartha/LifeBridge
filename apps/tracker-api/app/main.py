@@ -371,7 +371,9 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
     print(f"DEBUG: Calling USCIS service for receipt {receipt}")
     service = await get_uscis_service()
     result = await service.check_status(receipt)
-    print(f"DEBUG: USCIS Result: {result.get('status')} - {result.get('detail')[:50]}...")
+    status_msg = str(result.get('status'))
+    detail_msg = str(result.get('detail'))[:100]
+    print(f"DEBUG: USCIS Result for {receipt}: {status_msg} - {detail_msg}...")
     
     # 3. Update case status if valid (Exclude both tech errors and access blocks)
     bad_statuses = ["Error", "Invalid Receipt", "Unknown", "Access Denied", "Connection Error"]

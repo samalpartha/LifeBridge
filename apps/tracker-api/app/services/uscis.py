@@ -13,7 +13,7 @@ class USCISService:
         if not receipt_number:
             return {"status": "Error", "detail": "No receipt number provided"}
 
-        # MOCKS FOR DEMO
+        # MOCKS FOR DEMO (Case-Insensitive)
         mock_responses = {
             "IOE0987654321": {
                 "status": "Case Was Received",
@@ -25,9 +25,10 @@ class USCISService:
             }
         }
         
-        if receipt_number in mock_responses:
-            print(f"DEBUG: Returning MOCK status for {receipt_number}")
-            return mock_responses[receipt_number]
+        normalized_receipt = receipt_number.strip().upper()
+        if normalized_receipt in mock_responses:
+            print(f"DEBUG: Returning MOCK status for {normalized_receipt}")
+            return mock_responses[normalized_receipt]
 
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",

@@ -107,23 +107,38 @@ export default function CaseDashboard() {
         }
 
         setCheckingStatus(true);
+        console.log("DEBUG: Checking status for caseId:", caseId, "Receipt:", caseData.receipt_number);
+
+        // Add a safety timeout to stop the spinning if the server hangs
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Request timed out. Please check your internet or try again later.")), 25000)
+        );
+
         try {
-            const result = await trackerApi.checkCaseStatus(caseId);
+            const result = await Promise.race([
+                trackerApi.checkCaseStatus(caseId),
+                timeoutPromise
+            ]) as any;
+
+            console.log("DEBUG: API Response:", result);
+
             const status = result.uscis_status.status;
             const detail = result.uscis_status.detail;
 
             // Handle technical errors or blocks
-            const isError = ["Error", "Unknown", "Access Denied", "Connection Error"].includes(status);
+            const badStatuses = ["Error", "Unknown", "Access Denied", "Connection Error"];
+            const isError = badStatuses.includes(status);
 
             if (isError) {
-                toast.error(`${status}: ${detail || 'Please try again later.'}`, { duration: 5000 });
+                toast.error(`${status}: ${detail || 'The USCIS server is unreachable.'}`, { duration: 6000 });
             } else if (status === "Invalid Receipt") {
                 toast.error("Invalid Receipt Number. Please double check the number.");
             } else {
-                toast.success(`Updated Status: ${status}`);
+                toast.success(`Success: ${status}`);
                 refreshCase(); // Reload to see new status/event
             }
         } catch (error: any) {
+            console.error("DEBUG: Status Check Failure:", error);
             toast.error(error.message || "Failed to connect to tracker service.");
         } finally {
             setCheckingStatus(false);
