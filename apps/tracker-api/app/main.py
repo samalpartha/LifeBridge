@@ -355,21 +355,27 @@ def add_case_event(case_id: int, entry: CaseEventEntry, db: Session = Depends(ge
 
 @app.post("/v1/cases/{case_id}/status")
 async def check_case_status(case_id: int, db: Session = Depends(get_db)):
+    print(f"DEBUG: Checking status for case_id={case_id}")
     # 1. Fetch case
     db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
     if not db_case:
+        print(f"DEBUG: Case {case_id} not found")
         raise HTTPException(status_code=404, detail="Case not found")
     
     if not db_case.receipt_number:
+        print(f"DEBUG: Case {case_id} has no receipt number")
         raise HTTPException(status_code=400, detail="Case has no receipt number")
 
     # 2. Call USCIS Service
     from .services.uscis import get_uscis_service
+    print(f"DEBUG: Calling USCIS service for receipt {db_case.receipt_number}")
     service = await get_uscis_service()
     result = await service.check_status(db_case.receipt_number)
+    print(f"DEBUG: USCIS Result: {result.get('status')} - {result.get('detail')[:50]}...")
     
-    # 3. Update case status if valid
-    if result["status"] not in ["Error", "Invalid Receipt", "Unknown"]:
+    # 3. Update case status if valid (Exclude both tech errors and access blocks)
+    bad_statuses = ["Error", "Invalid Receipt", "Unknown", "Access Denied", "Connection Error"]
+    if result["status"] not in bad_statuses:
         # Only update if meaningful
         db_case.status = result["status"]
         
@@ -389,6 +395,7 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
                 event_type="status_update"
             )
             db.add(new_event)
+            print(f"DEBUG: Added new case event: {result['status']}")
             
         db.commit()
         db.refresh(db_case)

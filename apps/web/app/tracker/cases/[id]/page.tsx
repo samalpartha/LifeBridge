@@ -109,10 +109,22 @@ export default function CaseDashboard() {
         setCheckingStatus(true);
         try {
             const result = await trackerApi.checkCaseStatus(caseId);
-            toast.success(`Status: ${result.uscis_status.status}`);
-            refreshCase(); // Reload to see new status/event
+            const status = result.uscis_status.status;
+            const detail = result.uscis_status.detail;
+
+            // Handle technical errors or blocks
+            const isError = ["Error", "Unknown", "Access Denied", "Connection Error"].includes(status);
+
+            if (isError) {
+                toast.error(`${status}: ${detail || 'Please try again later.'}`, { duration: 5000 });
+            } else if (status === "Invalid Receipt") {
+                toast.error("Invalid Receipt Number. Please double check the number.");
+            } else {
+                toast.success(`Updated Status: ${status}`);
+                refreshCase(); // Reload to see new status/event
+            }
         } catch (error: any) {
-            toast.error(error.message);
+            toast.error(error.message || "Failed to connect to tracker service.");
         } finally {
             setCheckingStatus(false);
         }
