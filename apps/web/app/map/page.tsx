@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { EMBASSIES } from "../data/embassies";
+import { EMBASSIES } from "@/app/data/embassies";
 import dynamic from "next/dynamic";
 import { MapPin, Phone, Building2, Globe } from "lucide-react";
 
@@ -104,7 +104,7 @@ export default function MapPage() {
                             <AttorneyMap
                                 center={[selectedEmbassy.lat, selectedEmbassy.lng]}
                                 attorneys={[{
-                                    id: 1,
+                                    id: "1",
                                     name: `Embassy of ${selectedEmbassy.country}`,
                                     firm: "Diplomatic Mission",
                                     address: selectedEmbassy.address,
