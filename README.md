@@ -1,9 +1,8 @@
-# LifeBridge 🌉
-### 🔗 API Documentation
-- **Core API:** [https://lifebridge-production.up.railway.app/docs](https://lifebridge-production.up.railway.app/docs)
-- **Tracker API:** [https://modest-wholeness-production-b698.up.railway.app/docs](https://modest-wholeness-production-b698.up.railway.app/docs)
+# [![LifeBridge Icon](https://raw.githubusercontent.com/psama0214/lifebridge/main/apps/web/public/icon.png)](https://life-bridge-peach.vercel.app/) LifeBridge 🌉
 
 ### *Bridging Borders with Artificial Intelligence*
+
+[![Status](https://img.shields.io/badge/Status-Live-green?style=for-the-badge)](https://life-bridge-peach.vercel.app/) [![AI](https://img.shields.io/badge/AI-Gemini%20Pro-blue?style=for-the-badge)](https://deepmind.google/technologies/gemini/) [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
 **Submission for the VisaVerse AI Hackathon**
 
@@ -11,106 +10,154 @@ LifeBridge is an end-to-end, AI-powered platform designed to make global mobilit
 
 ---
 
-## 🚀 Live Demo
-*   **Web Portal**: [life-bridge-peach.vercel.app](https://life-bridge-peach.vercel.app)
-*   **Core AI API**: [modest-wholeness-production-b698.up.railway.app](https://modest-wholeness-production-b698.up.railway.app)
-*   **Case Tracker API**: [lifebridge-production.up.railway.app](https://lifebridge-production.up.railway.app)
+## 🚀 Live Access
+
+| Component | URL | Description |
+|-----------|-----|-------------|
+| **Frontend Portal** | [**life-bridge-peach.vercel.app**](https://life-bridge-peach.vercel.app/) | The main user interface for migrants and advisors. |
+| **Tracker API** | [**Docs & Swagger**](https://lifebridge-production.up.railway.app/docs) | Case management, events, and USCIS integration. |
+| **Core AI API** | [**Docs & Swagger**](https://modest-wholeness-production-b698.up.railway.app/docs) | Document reasoning, risk analysis, and LLM orchestration. |
+
+*(Click the icon above to launch the application)*
 
 ---
 
-## 🧠 Project Goal
-The primary objective of LifeBridge is to democratize legal and immigration assistance. We aim to reduce the "complexity tax" paid by migrants by providing a unified, intelligent workspace that handles document analysis, regulatory research, and case tracking automatically.
+## 🏗️ Architecture
 
----
+LifeBridge uses a distributed microservices architecture to separate concern between real-time user interaction and heavy cognitive processing.
 
-## 🏗️ System Architecture
-
-Our architecture is designed for scalability, security, and intelligence, splitting responsibilities between a high-performance frontend and specialized microservices.
+### **Full System Overview**
+High-level view of how the entire ecosystem connects, from the user's browser to our AI and Government integrations.
 
 ```mermaid
 graph TD
-    User(["User (Browser)"])
+    %% Nodes
+    User(("👤 User"))
     
-    subgraph "Vercel Cloud"
-        NextJS["Next.js Web App (Frontend)"]
-        UI["Rich UI / Framer Motion"]
+    subgraph Frontend_Vercel ["🖥️ Frontend (Vercel)"]
+        NextJS["Next.js 14 App"]
     end
     
-    subgraph "Railway Backend"
-        CoreAPI["Core API (Python/FastAPI)"]
-        TrackerAPI["Tracker API (Python/FastAPI)"]
-        UscisScraper["USCIS Status Scraper"]
+    subgraph Backend_Railway ["⚙️ Backend (Railway)"]
+        Tracker["📄 Tracker API"]
+        Core["🧠 Core AI API"]
     end
     
-    subgraph "AI & Intelligence"
-        Gemini["Google Gemini Pro 1.5"]
-        DocAI["Document Reasoning Engine"]
+    subgraph Data_Layer ["💾 Persistence"]
+        DB[("PostgreSQL")]
+        S3[("S3 Storage")]
     end
     
-    subgraph "SaaS Persistence"
-        SupabaseDB[("PostgreSQL (Supabase/Railway)")]
-        SupabaseS3[("S3 Storage (Supabase)")]
+    subgraph External_Services ["🌐 External Integrations"]
+        Gemini["✨ Google Gemini Pro"]
+        USCIS["🏛️ USCIS.gov"]
     end
 
-    User -->|HTTPS| NextJS
-    NextJS -->|AI Queries/Docs| CoreAPI
-    NextJS -->|Case Management| TrackerAPI
+    %% Flows
+    User == HTTPS ==> NextJS
     
-    CoreAPI -->|Cognitive Tasks| Gemini
-    TrackerAPI -->|Live Status| UscisScraper
-    UscisScraper -->|Scrape| USCIS["USCIS Government Website"]
+    NextJS -- "REST / JSON" --> Tracker
+    NextJS -- "REST / JSON" --> Core
     
-    CoreAPI & TrackerAPI -->|Relational Data| SupabaseDB
-    CoreAPI & TrackerAPI -->|Secure Files| SupabaseS3
+    Tracker -- "Read/Write" --> DB
+    Tracker -- "Store Docs" --> S3
+    
+    Tracker -. "Scrape Status" .-> USCIS
+    Core -- "Reasoning" --> Gemini
+    
+    %% Styling
+    classDef primary fill:#2563eb,stroke:#1d4ed8,color:white;
+    classDef secondary fill:#4f46e5,stroke:#4338ca,color:white;
+    classDef db fill:#059669,stroke:#047857,color:white;
+    classDef ext fill:#d97706,stroke:#b45309,color:white;
+    
+    class NextJS primary;
+    class Tracker,Core secondary;
+    class DB,S3 db;
+    class Gemini,USCIS ext;
+```
+
+### **Frontend Architecture**
+Built on **Next.js 14**, the frontend provides a reactive, "app-like" experience.
+
+*   **Framework**: Next.js 14 (App Router)
+*   **Styling**: Tailwind CSS + Framer Motion (Glassmorphism design system)
+*   **State**: React Context (Auth, Language) + SWR
+*   **Testing**: Playwright (E2E) + Vitest (Unit)
+
+```mermaid
+graph TD
+    Client["Browser Client"]
+    Vercel["Vercel Edge Network"]
+    
+    subgraph "Next.js Application"
+        Router["App Router"]
+        Pages["Dynamic Pages"]
+        Components["UI Components"]
+        API_Route["Next.js API Proxy"]
+    end
+    
+    Client -->|HTTPS| Vercel
+    Vercel --> Router
+    Router --> Pages
+    Pages --> Components
+    Components -->|Fetch| API_Route
+```
+
+### **Backend Architecture**
+Two specialized **FastAPI** services power the logic, deployed on Railway.
+
+*   **Tracker Service**: Manages long-lived persistence (User history, Cases, Tasks). Connects to PostgreSQL.
+*   **Core Service**: Stateless intelligence engine. handles OCR, LLM Chains, and RAG.
+
+```mermaid
+graph TD
+    subgraph "Railway Infrastructure"
+        LB_Tracker["LifeBridge Tracker API"]
+        LB_Core["LifeBridge Core AI API"]
+        DB[("PostgreSQL")]
+        S3[("Object Storage (MinIO/S3)")]
+    end
+    
+    API_Route["Frontend Proxy"] -->|Case Data| LB_Tracker
+    API_Route -->|Reasoning| LB_Core
+    
+    LB_Tracker -->|CRUD| DB
+    LB_Core -->|GenAI| Gemini["Google Gemini Pro"]
+    LB_Tracker -->|Files| S3
+    LB_Tracker -->|Scrape| USCIS["USCIS Status Page"]
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Key Technologies
 
 ### **Frontend Excellence**
-*   **Next.js 14**: Leveraging App Router for high-performance streaming and SSR.
-*   **Vanilla CSS + Tailwind**: Custom-tuned design system with a premium "Glassmorphism" aesthetic.
-*   **Framer Motion**: Smooth micro-animations for an interactive feel.
-*   **Lucide React**: Clean, modern iconography.
+*   **Next.js 14**: Server Side Rendering for SEO and speed.
+*   **TailwindCSS**: Rapid, utility-first styling.
+*   **Framer Motion**: Premium animations.
+*   **Lucide React**: Vector iconography.
 
-### **Intelligence Layer**
-*   **Google Gemini Pro**: Orchestrates document synthesis, risk analysis, and attorney search.
-*   **FastAPI**: Asynchronous Python framework powering our dual-API backbone.
-*   **BeautifulSoup4**: Robust scraper for live government status updates.
-
-### **Infrastructure & Security**
-*   **Supabase**: Managed PostgreSQL and S3-compatible Object Storage for production-grade reliability.
-*   **Railway**: Containerized deployment for Core and Tracker services.
-*   **Vercel**: Global Edge hosting for the frontend.
-
----
-
-## 📂 Environment Setup
-
-To run LifeBridge locally or in production, ensure the following variables are configured:
-
-### **Required Backend Keys**
-*   `DATABASE_URL`: Your PostgreSQL connection string (Postgres/Supabase).
-*   `GOOGLE_API_KEY`: Your Google AI Studio/Vertex API Key.
-*   `CORS_ORIGINS`: `*` (for development) or your Vercel URL (for production).
-
-### **Storage (S3 Compatible)**
-*   `S3_ENDPOINT`: Your endpoint (e.g., Supabase S3 URL).
-*   `S3_ACCESS_KEY`: Access key for bucket.
-*   `S3_SECRET_KEY`: Secret key for bucket.
-*   `S3_BUCKET_NAME`: `lifebridge-documents`.
-
-### **Frontend Keys**
-*   `NEXT_PUBLIC_API_URL`: URL of the Core API service.
-*   `TRACKER_API_URL`: URL of the Tracker API service.
+### **Backend Intelligence**
+*   **FastAPI**: Python's modern async framework.
+*   **Google Gemini Pro 1.5**: The brain behind document analysis.
+*   **SQLAlchemy + Pydantic**: Robust data modeling.
+*   **BeautifulSoup4**: Real-time government site scraping.
+*   **Playwright**: For verified end-to-end reliability.
 
 ---
 
 ## 👥 Team Information
-*   **Partha Samal** - Developer - *psama0214@gmail.com*
+
+**Partha Sarathi Samal**
+*Lead Architect & Full Stack Engineer*
+Orchestrated the microservices architecture, implemented the comprehensive testing strategy, and led the integration of Google Gemini AI.
+
+**Suresh Kumar Palus**
+*Frontend Lead & UX Designer*
+Designed the premium "Glassmorphism" user interface, developed the dynamic React component library, and ensured a seamless mobile-responsive experience.
 
 ---
 
-## License
-MIT License. Open exploration for a borderless world.
+## 📜 License
+MIT License. Open exploration for a global future.
