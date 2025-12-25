@@ -147,6 +147,7 @@ export default function CaseDashboard() {
                             <div className="flex items-center gap-4 mb-2 group">
                                 <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
                                 <button
+                                    type="button"
                                     onClick={() => setIsEditModalOpen(true)}
                                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                     title="Edit Case Details"
@@ -170,6 +171,7 @@ export default function CaseDashboard() {
                         <div className="flex flex-col items-end gap-3">
                             {caseData.receipt_number ? (
                                 <button
+                                    type="button"
                                     onClick={handleCheckStatus}
                                     disabled={checkingStatus}
                                     className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
@@ -190,6 +192,7 @@ export default function CaseDashboard() {
 
                             {/* Delete Button */}
                             <button
+                                type="button"
                                 onClick={handleDeleteCase}
                                 className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
                             >
