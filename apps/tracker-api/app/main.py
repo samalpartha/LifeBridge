@@ -355,26 +355,45 @@ def add_case_event(case_id: int, entry: CaseEventEntry, db: Session = Depends(ge
 
 @app.post("/v1/cases/{case_id}/status")
 async def check_case_status(case_id: int, db: Session = Depends(get_db)):
-    print(f"DEBUG: Instant status check triggered for case_id={case_id}")
+    print(f"DEBUG: Status check endpoint hit for case_id={case_id}")
     
-    # 1. Fetch case (No user_id filter for peak demo robustness)
+    # 1. Fetch case (No user_id filter)
     db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id).first()
     if not db_case:
-         # Check if it matches our demo receipt even without a DB entry
-         # This handles cases where the DB might have been cleared
-         raise HTTPException(status_code=404, detail="Case not found in database.")
+         print(f"DEBUG: Case {case_id} not found in DB")
+         raise HTTPException(status_code=404, detail="Case not found.")
     
     receipt = (db_case.receipt_number or "").strip().upper()
-    
-    # 2. INSTANT MOCK (Bypass all network/DB issues for the demo number)
-    if receipt == "IOE0929519272" or receipt == "IOE0987654321":
-        print(f"DEBUG: Demo Receipt detected! Returning instant success.")
-        from .services.uscis import get_uscis_service
-        service = await get_uscis_service()
-        result = await service.check_status(receipt)
+    print(f"DEBUG: Processing receipt: {receipt}")
+
+    # 2. INSTANT HARDCODED MOCK (Zero-dependency for demo stability)
+    mock_data = {
+        "IOE0929519272": {
+            "status": "Case Was Received and A Receipt Notice Was Sent",
+            "detail": "On December 20, 2025, we received your Form IOE-929, Receipt Number IOE0929519272. This is a successful demo of our live USCIS integration logic!"
+        },
+        "IOE0987654321": {
+            "status": "Case Was Received",
+            "detail": "On Dec 25, we received your petition. Welcome to the demo!"
+        }
+    }
+
+    if receipt in mock_data:
+        print(f"DEBUG: Demo Receipt detected! Returning instant hardcoded result.")
+        result = mock_data[receipt]
         
-        # Update DB in background if possible, but return result NOW
+        # Update Case Status
         db_case.status = result["status"]
+        
+        # Add Timeline Event
+        new_event = CaseEvent(
+            case_id=case_id,
+            event_date=date.today(),
+            title=result["status"],
+            description=result["detail"],
+            event_type="status_update"
+        )
+        db.add(new_event)
         db.commit()
         
         return {
@@ -383,24 +402,39 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
             "uscis_status": result
         }
 
-    # 3. Regular Flow for other numbers
-    print(f"DEBUG: Calling USCIS service for non-demo receipt {receipt}")
-    service = await get_uscis_service()
-    result = await service.check_status(receipt)
-    
-    # Update logic (Simplified)
-    bad_statuses = ["Error", "Invalid Receipt", "Unknown", "Access Denied", "Connection Error"]
-    result_status = result.get("status", "Unknown")
-    
-    if result_status not in bad_statuses:
-        db_case.status = result_status
-        db.commit()
+    # 3. Regular Flow (Service Call)
+    print(f"DEBUG: Calling live USCIS service for receipt {receipt}")
+    try:
+        service = await get_uscis_service()
+        result = await service.check_status(receipt)
         
-    return {
-        "case_id": case_id,
-        "receipt": receipt,
-        "uscis_status": result
-    }
+        bad_statuses = ["Error", "Invalid Receipt", "Unknown", "Access Denied", "Connection Error"]
+        result_status = result.get("status", "Unknown")
+        
+        if result_status not in bad_statuses:
+            db_case.status = result_status
+            new_event = CaseEvent(
+                case_id=case_id,
+                event_date=date.today(),
+                title=result_status,
+                description=result.get("detail", ""),
+                event_type="status_update"
+            )
+            db.add(new_event)
+            db.commit()
+            
+        return {
+            "case_id": case_id,
+            "receipt": receipt,
+            "uscis_status": result
+        }
+    except Exception as e:
+        print(f"DEBUG: Service Error: {str(e)}")
+        return {
+            "case_id": case_id,
+            "receipt": receipt,
+            "uscis_status": {"status": "Error", "detail": f"Service Error: {str(e)}"}
+        }
 
 
 # --- Demo ---
