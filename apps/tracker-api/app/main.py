@@ -64,11 +64,11 @@ def add_travel(entry: TravelEntry, db: Session = Depends(get_db)):
 
 @app.get("/v1/history/travel")
 def get_travel(db: Session = Depends(get_db)):
-    return db.query(TravelHistory).filter(TravelHistory.user_id == "mock_user_123").all()
+    return db.query(TravelHistory).all()
 
 @app.delete("/v1/history/travel/{entry_id}")
 def delete_travel(entry_id: int, db: Session = Depends(get_db)):
-    db_entry = db.query(TravelHistory).filter(TravelHistory.id == entry_id, TravelHistory.user_id == "mock_user_123").first()
+    db_entry = db.query(TravelHistory).filter(TravelHistory.id == entry_id).first()
     if not db_entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     db.delete(db_entry)
@@ -101,11 +101,11 @@ def add_employment(entry: EmploymentEntry, db: Session = Depends(get_db)):
 
 @app.get("/v1/history/employment")
 def get_employment(db: Session = Depends(get_db)):
-    return db.query(EmploymentHistory).filter(EmploymentHistory.user_id == "mock_user_123").all()
+    return db.query(EmploymentHistory).all()
 
 @app.delete("/v1/history/employment/{entry_id}")
 def delete_employment(entry_id: int, db: Session = Depends(get_db)):
-    db_entry = db.query(EmploymentHistory).filter(EmploymentHistory.id == entry_id, EmploymentHistory.user_id == "mock_user_123").first()
+    db_entry = db.query(EmploymentHistory).filter(EmploymentHistory.id == entry_id).first()
     if not db_entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     db.delete(db_entry)
@@ -123,11 +123,11 @@ def add_residence(entry: ResidenceEntry, db: Session = Depends(get_db)):
 
 @app.get("/v1/history/residence")
 def get_residence(db: Session = Depends(get_db)):
-    return db.query(ResidenceHistory).filter(ResidenceHistory.user_id == "mock_user_123").all()
+    return db.query(ResidenceHistory).all()
 
 @app.delete("/v1/history/residence/{entry_id}")
 def delete_residence(entry_id: int, db: Session = Depends(get_db)):
-    db_entry = db.query(ResidenceHistory).filter(ResidenceHistory.id == entry_id, ResidenceHistory.user_id == "mock_user_123").first()
+    db_entry = db.query(ResidenceHistory).filter(ResidenceHistory.id == entry_id).first()
     if not db_entry:
         raise HTTPException(status_code=404, detail="Entry not found")
     db.delete(db_entry)
@@ -146,7 +146,7 @@ class DocumentEntry(BaseModel):
 
 @app.get("/v1/documents")
 def get_documents(db: Session = Depends(get_db)):
-    return db.query(Document).filter(Document.user_id == "mock_user_123").all()
+    return db.query(Document).all()
 
 @app.post("/v1/documents")
 def add_document(entry: DocumentEntry, db: Session = Depends(get_db)):
@@ -193,7 +193,7 @@ from .models import Contact
 
 @app.get("/v1/contacts")
 def get_contacts(db: Session = Depends(get_db)):
-    return db.query(Contact).filter(Contact.user_id == "mock_user_123").all()
+    return db.query(Contact).all()
 
 @app.post("/v1/contacts")
 def add_contact(entry: ContactEntry, db: Session = Depends(get_db)):
@@ -214,7 +214,7 @@ from .models import Note
 
 @app.get("/v1/notes")
 def get_notes(db: Session = Depends(get_db)):
-    return db.query(Note).filter(Note.user_id == "mock_user_123").all()
+    return db.query(Note).all()
 
 @app.post("/v1/notes")
 def add_note(entry: NoteEntry, db: Session = Depends(get_db)):
@@ -238,7 +238,7 @@ from .models import Task
 
 @app.get("/v1/tasks")
 def get_tasks(db: Session = Depends(get_db)):
-    return db.query(Task).filter(Task.user_id == "mock_user_123").all()
+    return db.query(Task).all()
 
 @app.post("/v1/tasks")
 def add_task(entry: TaskEntry, db: Session = Depends(get_db)):
@@ -255,7 +255,7 @@ def add_task(entry: TaskEntry, db: Session = Depends(get_db)):
 
 @app.put("/v1/tasks/{task_id}")
 def update_task(task_id: int, entry: TaskEntry, db: Session = Depends(get_db)):
-    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == "mock_user_123").first()
+    db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -269,7 +269,7 @@ def update_task(task_id: int, entry: TaskEntry, db: Session = Depends(get_db)):
 
 @app.delete("/v1/tasks/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db)):
-    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == "mock_user_123").first()
+    db_task = db.query(Task).filter(Task.id == task_id).first()
     if not db_task:
         raise HTTPException(status_code=404, detail="Task not found")
     
@@ -296,11 +296,11 @@ class CaseEventEntry(BaseModel):
 
 @app.get("/v1/cases")
 def get_cases(db: Session = Depends(get_db)):
-    return db.query(ImmigrationCase).filter(ImmigrationCase.user_id == "mock_user_123").all()
+    return db.query(ImmigrationCase).all()
 
 @app.get("/v1/cases/{case_id}")
 def get_case(case_id: int, db: Session = Depends(get_db)):
-    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id).first()
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
     return db_case
@@ -315,7 +315,7 @@ def add_case(entry: CaseEntry, db: Session = Depends(get_db)):
 
 @app.put("/v1/cases/{case_id}")
 def update_case(case_id: int, entry: CaseEntry, db: Session = Depends(get_db)):
-    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id).first()
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
         
@@ -328,7 +328,7 @@ def update_case(case_id: int, entry: CaseEntry, db: Session = Depends(get_db)):
 
 @app.delete("/v1/cases/{case_id}")
 def delete_case(case_id: int, db: Session = Depends(get_db)):
-    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id).first()
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
     
@@ -343,7 +343,7 @@ def get_case_events(case_id: int, db: Session = Depends(get_db)):
 @app.post("/v1/cases/{case_id}/events")
 def add_case_event(case_id: int, entry: CaseEventEntry, db: Session = Depends(get_db)):
     # Verify case ownership
-    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id, ImmigrationCase.user_id == "mock_user_123").first()
+    db_case = db.query(ImmigrationCase).filter(ImmigrationCase.id == case_id).first()
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
         
