@@ -130,6 +130,49 @@ graph TD
 
 ---
 
+### **System Node Specification**
+Reflecting our strictly typed, modular design philosophy.
+
+```yaml
+# lifebridge/system/nodes.yaml
+nodes:
+  # -- Frontend Layer --
+  ui:WEB:PORTAL:
+    desc: "Next.js 14 Reactive Client"
+    in: [user_interaction, auth_token]
+    out: [dom_render, api_request]
+    config:
+      framework: "next.js"
+      rendering: "server_side"
+
+  # -- Service Layer --
+  op:TRACKER:API:
+    desc: "Case Management & Persistence"
+    in: [api_request, db_connection]
+    out: [json_response, audit_log]
+    queue:
+      concurrency: 100
+      strategy: "fifo"
+
+  op:CORE:INTELLIGENCE:
+    desc: "Document Reasoning Engine"
+    in: [context_window, pdf_stream]
+    out: [risk_assessment, generated_plan]
+    mapreduce: true
+    queue:
+      concurrency: 10
+
+  # -- External Integrations --
+  ext:USCIS:SCRAPER:
+    desc: "Government Status Sync"
+    in: [receipt_number]
+    out: [html_content, status_change]
+    queue:
+      rate_limit: "60/min"
+```
+
+---
+
 ## 🛠️ Key Technologies
 
 ### **Frontend Excellence**
