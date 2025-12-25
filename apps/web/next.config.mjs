@@ -15,15 +15,21 @@ const nextConfig = {
     return [
       {
         source: '/api/tracker/:path*',
-        destination: 'http://tracker-api:3100/v1/:path*', // Proxy to Tracker API service name
+        destination: process.env.TRACKER_API_URL
+          ? `${process.env.TRACKER_API_URL}/:path*`
+          : 'http://tracker-api:3100/v1/:path*',
       },
       {
         source: '/api/docgen/:path*',
-        destination: 'http://docgen:8000/:path*', // Proxy to DocGen service name
+        destination: process.env.DOCGEN_API_URL
+          ? `${process.env.DOCGEN_API_URL}/:path*`
+          : 'http://docgen:8000/:path*',
       },
       {
         source: '/api/:path*',
-        destination: 'http://api:8000/:path*', // Proxy to Python API service name
+        destination: process.env.NEXT_PUBLIC_API_URL
+          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
+          : 'http://api:8000/:path*',
       },
     ];
   },
