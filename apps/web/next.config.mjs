@@ -15,15 +15,36 @@ const nextConfig = {
     return [
       {
         source: '/api/tracker/:path*',
-        destination: (process.env.TRACKER_API_URL || process.env.NEXT_PUBLIC_TRACKER_API_URL || 'http://tracker-api:3100').replace(/\/$/, '') + '/v1/:path*',
+        destination: (() => {
+          let url = process.env.TRACKER_API_URL || process.env.NEXT_PUBLIC_TRACKER_API_URL || 'http://tracker-api:3100';
+          url = url.replace(/\/$/, '');
+          if (!url.startsWith('http')) {
+            url = 'https://' + url;
+          }
+          return url + '/v1/:path*';
+        })(),
       },
       {
         source: '/api/docgen/:path*',
-        destination: (process.env.DOCGEN_API_URL || 'http://docgen:8000').replace(/\/$/, '') + '/:path*',
+        destination: (() => {
+          let url = process.env.DOCGEN_API_URL || 'http://docgen:8000';
+          url = url.replace(/\/$/, '');
+          if (!url.startsWith('http')) {
+            url = 'https://' + url;
+          }
+          return url + '/:path*';
+        })(),
       },
       {
         source: '/api/:path*',
-        destination: (process.env.NEXT_PUBLIC_API_URL || 'http://api:8000').replace(/\/$/, '') + '/:path*',
+        destination: (() => {
+          let url = process.env.NEXT_PUBLIC_API_URL || 'http://api:8000';
+          url = url.replace(/\/$/, '');
+          if (!url.startsWith('http')) {
+            url = 'https://' + url;
+          }
+          return url + '/:path*';
+        })(),
       },
     ];
   },
