@@ -24,7 +24,9 @@ class USCISService:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9",
-            "Cache-Control": "max-age=0",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Origin": "https://egov.uscis.gov",
+            "Referer": "https://egov.uscis.gov/casestatus/landing.do",
             "Connection": "keep-alive",
             "Content-Type": "application/x-www-form-urlencoded",
         }
@@ -35,41 +37,61 @@ class USCISService:
         }
 
         try:
-            async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
-                resp = await client.post(self.BASE_URL, data=data, headers=headers, timeout=20.0)
+            # Use a persistent client to handle cookies (USCIS often requires a session)
+            async with httpx.AsyncClient(follow_redirects=True, verify=False, timeout=30.0) as client:
+                # 1. First visit the landing page to get a session cookie
+                try:
+                    await client.get("https://egov.uscis.gov/casestatus/landing.do", headers=headers)
+                except Exception as e:
+                    # Log but continue, sometimes cookies aren't strictly required
+                    print(f"USCIS Session Init Warning: {e}")
+
+                # 2. Submit the status check
+                resp = await client.post(self.BASE_URL, data=data, headers=headers)
                 
                 if resp.status_code != 200:
-                    return {"status": "Error", "detail": f"USCIS returned error status: {resp.status_code}"}
+                    return {
+                        "status": "Error", 
+                        "detail": f"USCIS Communication Error (HTTP {resp.status_code}). This usually means their server is busy or blocking the cloud provider's IP."
+                    }
 
+                # 3. Parse result
                 soup = BeautifulSoup(resp.text, "html.parser")
                 
-                # Try multiple possible selectors as USCIS frequently A/B tests or updates layouts
-                title_tag = (
-                    soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("h1")
-                ) or soup.find("h1", class_="text-center") or soup.find("div", id="caseStatus")
-                
-                body_tag = (
-                    soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("p")
-                ) or (title_tag and title_tag.find_next("p"))
+                # Check for "Validation Error" (Invalid Receipt)
+                if "Validation Error" in resp.text:
+                    return {"status": "Invalid Receipt", "detail": "USCIS says this receipt number is invalid. Please check for typos."}
+
+                # Find status using multiple common patterns
+                title_tag = soup.find("h1", class_="text-center") or \
+                            soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("h1") or \
+                            soup.find("div", id="caseStatus")
+
+                body_tag = (title_tag and title_tag.find_next("p")) or \
+                           (soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("p"))
 
                 if not title_tag:
-                    # Search broadly for any header with status keywords
+                    # Final fallback: generic status hunt
                     for h1 in soup.find_all(["h1", "h2"]):
                         text = h1.get_text().strip()
-                        if text and any(word in text.lower() for word in ["case", "request", "notice", "approved", "received", "decision", "status"]):
+                        if text and any(word in text.lower() for word in ["case", "status", "received", "approved", "notice"]):
                             title_tag = h1
                             body_tag = h1.find_next("p")
                             break
                 
                 if not title_tag:
-                    if "Validation Error" in resp.text:
-                         return {"status": "Invalid Receipt", "detail": "The receipt number is invalid."}
-                    return {"status": "Unknown", "detail": "Status text not found in USCIS response."}
+                    # If we got a 200 but no status, it might be a CAPTCHA or "Too many requests" page
+                    if "Access Denied" in resp.text or "unusual traffic" in resp.text.lower():
+                        return {"status": "Access Denied", "detail": "USCIS is blocking this request due to automated traffic protections. Please try again later or from a different network."}
+                    return {"status": "Unknown", "detail": "Could not find status text. The USCIS website format may have changed."}
 
                 return {
                     "status": title_tag.get_text(strip=True),
                     "detail": body_tag.get_text(strip=True) if body_tag else ""
                 }
+
+        except Exception as e:
+            return {"status": "Error", "detail": f"Connection Error: {str(e)}"}
 
         except Exception as e:
             return {"status": "Error", "detail": str(e)}
