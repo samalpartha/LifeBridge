@@ -8,5 +8,5 @@ until python -c "import os, psycopg; psycopg.connect(os.environ.get('DATABASE_UR
 done
 
 echo "Database is up - starting application"
-exec uvicorn app.main:app --host 0.0.0.0 --port 8000
+exec uvicorn app.main:app --host 0.0.0.0 --port "${PORT:-8000}"
 

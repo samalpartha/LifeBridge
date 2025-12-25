@@ -60,8 +60,7 @@ export default function SamaritanChat() {
 
         // Real AI Call
         try {
-            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-            const res = await fetch(`${API_BASE}/chat`, {
+            const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: userMsg.text })

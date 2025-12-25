@@ -75,12 +75,11 @@ export default function AttorneysPage() {
             }
 
             // 2. Fetch from Backend (Compliance & Data)
-            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
             const params = new URLSearchParams();
             if (zipcode) params.append("zip", zipcode);
             if (searchQuery) params.append("query", searchQuery);
 
-            const response = await fetch(`${API_BASE}/attorneys/search?${params.toString()}`);
+            const response = await fetch(`/api/attorneys/search?${params.toString()}`);
 
             if (!response.ok) {
                 throw new Error("Failed to search attorneys");
