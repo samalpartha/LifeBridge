@@ -120,5 +120,7 @@ def get_store() -> ObjectStore:
             public_base_url=public_base,
         )
 
-    base = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "data"))
+    # Stay within the application root to ensure write permissions in Docker
+    app_root = Path(__file__).resolve().parents[2]
+    base = os.getenv("STORAGE_BASE_PATH", str(app_root / "data"))
     return LocalObjectStore(os.path.join(base, "uploads"))
