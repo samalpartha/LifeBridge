@@ -21,8 +21,12 @@ class USCISService:
             }
 
         headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "max-age=0",
+            "Connection": "keep-alive",
+            "Content-Type": "application/x-www-form-urlencoded",
         }
         
         data = {
@@ -31,38 +35,36 @@ class USCISService:
         }
 
         try:
-            async with httpx.AsyncClient() as client:
-                resp = await client.post(self.BASE_URL, data=data, headers=headers, timeout=10.0)
+            async with httpx.AsyncClient(follow_redirects=True, verify=False) as client:
+                resp = await client.post(self.BASE_URL, data=data, headers=headers, timeout=20.0)
                 
                 if resp.status_code != 200:
-                    return {"status": "Error", "detail": "Failed to reach USCIS servers"}
+                    return {"status": "Error", "detail": f"USCIS returned error status: {resp.status_code}"}
 
                 soup = BeautifulSoup(resp.text, "html.parser")
                 
-                # Find the main status area even if class names changed
-                status_header = soup.find("div", class_="rows text-center")
+                # Try multiple possible selectors as USCIS frequently A/B tests or updates layouts
+                title_tag = (
+                    soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("h1")
+                ) or soup.find("h1", class_="text-center") or soup.find("div", id="caseStatus")
                 
-                title_tag = None
-                body_tag = None
+                body_tag = (
+                    soup.find("div", class_="rows text-center") and soup.find("div", class_="rows text-center").find("p")
+                ) or (title_tag and title_tag.find_next("p"))
 
-                if status_header:
-                    title_tag = status_header.find("h1")
-                    body_tag = status_header.find("p")
-                else:
-                    # Fallback: Search for any h1 that looks like a status
-                    for h1 in soup.find_all("h1"):
+                if not title_tag:
+                    # Search broadly for any header with status keywords
+                    for h1 in soup.find_all(["h1", "h2"]):
                         text = h1.get_text().strip()
-                        if text and any(word in text.lower() for word in ["case", "request", "notice", "approved", "received"]):
+                        if text and any(word in text.lower() for word in ["case", "request", "notice", "approved", "received", "decision", "status"]):
                             title_tag = h1
-                            # Body is usually the very next p
                             body_tag = h1.find_next("p")
                             break
                 
                 if not title_tag:
-                    # Check for validation error explicitly
                     if "Validation Error" in resp.text:
                          return {"status": "Invalid Receipt", "detail": "The receipt number is invalid."}
-                    return {"status": "Unknown", "detail": "Could not parse status. The USCIS page structure may have changed."}
+                    return {"status": "Unknown", "detail": "Status text not found in USCIS response."}
 
                 return {
                     "status": title_tag.get_text(strip=True),
