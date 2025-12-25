@@ -7,7 +7,8 @@ import SamaritanChat from "./SamaritanChat";
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     // Check if path starts with /login or /signup to handle sub-routes if any
-    const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/signup");
+    // Check if path starts with /login, /signup, or /forgot-password to handle sub-routes if any
+    const isAuthPage = pathname?.startsWith("/login") || pathname?.startsWith("/signup") || pathname?.startsWith("/forgot-password");
 
     return (
         <div className="flex min-h-screen">

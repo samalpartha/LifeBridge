@@ -100,6 +100,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://tracker:tracker_password@tracker-db:5432/tracker
       CORS_ORIGINS: http://localhost:3000
+      PORT: 3100
     volumes:
       - ./apps/tracker-api:/app
     ports:
@@ -114,6 +115,8 @@ services:
       context: ./apps/docgen
     ports:
       - "8001:8000"
+    volumes:
+      - ./apps/docgen:/app
     restart: unless-stopped
 
 networks:

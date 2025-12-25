@@ -1,0 +1,35 @@
+import { test, expect } from '@playwright/test';
+
+test.beforeEach(async ({ page }) => {
+    // Bypass auth by setting localStorage
+    await page.goto('/');
+    await page.evaluate(() => {
+        localStorage.setItem('lb_user', JSON.stringify({ name: 'Test User', email: 'test@example.com' }));
+    });
+    await page.goto('/'); // Reload to apply auth
+});
+
+test('USCIS status check flow via demo seeding', async ({ page }) => {
+    // 1. Click "try a demo case" link
+    const demoLink = page.getByText('try a demo case to explore features');
+    await expect(demoLink).toBeVisible();
+    await demoLink.click();
+
+    // 2. Wait for redirect to case page with a longer timeout
+    await expect(page).toHaveURL(/.*tracker\/cases\/\d+/, { timeout: 15000 });
+
+    // 3. Verify initial state
+    await expect(page.locator('span:has-text("Open")').first()).toBeVisible();
+
+    // 4. Click "Check Status" button
+    const checkStatusBtn = page.getByRole('button', { name: /Check Status/i });
+    await expect(checkStatusBtn).toBeVisible();
+    await checkStatusBtn.click();
+
+    // 5. Wait for success toast/status update
+    // The mock returns "Case Was Received"
+    await expect(page.locator('text=Case Was Received').first()).toBeVisible({ timeout: 15000 });
+
+    // 6. Verify the timeline has the event
+    await expect(page.locator('text=Case Was Received').first()).toBeVisible();
+});

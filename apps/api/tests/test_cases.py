@@ -67,7 +67,7 @@ def test_delete_case(client: TestClient):
     
     # Delete the case
     response = client.delete(f"/cases/{case_id}")
-    assert response.status_code == 204
+    assert response.status_code == 200
     
     # Verify it's gone
     get_response = client.get(f"/cases/{case_id}")

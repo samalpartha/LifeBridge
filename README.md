@@ -1,4 +1,8 @@
 # LifeBridge 🌉
+### 🔗 API Documentation
+- **Core API:** [https://lifebridge-production.up.railway.app/docs](https://lifebridge-production.up.railway.app/docs)
+- **Tracker API:** [https://modest-wholeness-production-b698.up.railway.app/docs](https://modest-wholeness-production-b698.up.railway.app/docs)
+
 ### *Bridging Borders with Artificial Intelligence*
 
 **Submission for the VisaVerse AI Hackathon**

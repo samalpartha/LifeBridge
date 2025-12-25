@@ -76,19 +76,25 @@ export function Sidebar() {
         <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen fixed left-0 top-0 z-50">
 
             {/* Brand */}
-            <div className="p-6 border-b border-gray-100 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                    <Image
-                        src="/icon.png"
-                        alt="LifeBridge Logo"
-                        width={40}
-                        height={40}
-                        className="object-cover"
-                    />
-                </div>
-                <div>
-                    <h1 className="font-bold text-gray-900 text-lg">LifeBridge</h1>
-                    <p className="text-xs text-gray-500">Mobility Assistant</p>
+            <div className="p-6 border-b border-gray-100">
+                <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
+                        <Image
+                            src="/icon.png"
+                            alt="LifeBridge Logo"
+                            width={40}
+                            height={40}
+                            className="object-cover"
+                        />
+                    </div>
+                    <div>
+                        <h1 className="font-bold text-gray-900 text-lg">LifeBridge</h1>
+                        <p className="text-xs text-gray-500">Mobility Assistant</p>
+                    </div>
+                </Link>
+                {/* Language Switcher - Moved below logo */}
+                <div className="mt-4">
+                    <LanguageSwitcher />
                 </div>
             </div>
 
@@ -123,12 +129,6 @@ export function Sidebar() {
 
             {/* User Footer */}
             <div className="p-4 border-t border-gray-200 space-y-4">
-
-                {/* Language Switcher */}
-                <div className="px-3">
-                    <LanguageSwitcher />
-                </div>
-
                 <div className="flex items-center gap-3 px-3 py-2 mb-2">
                     <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
                         {user?.email?.[0].toUpperCase() || "U"}

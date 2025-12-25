@@ -23,11 +23,12 @@ if DATABASE_URL:
     elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
-# Disable prepared statements for Supavisor Transaction Pooler
-connect_args = {
-    "prepare_threshold": None,
-    "connect_timeout": 10  # 10s timeout for connection
-}
+# Disable prepared statements for Supavisor Transaction Pooler (Postgres only)
+connect_args = {}
+if DATABASE_URL and DATABASE_URL.startswith("postgresql"):
+    connect_args["prepare_threshold"] = None
+    connect_args["connect_timeout"] = 10
+# Basic connect_args for other engines (none needed for sqlite)
 engine = create_engine(
     DATABASE_URL, 
     connect_args=connect_args,
