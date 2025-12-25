@@ -6,8 +6,9 @@ from pydantic import BaseModel
 from datetime import date
 from .models import (
     init_db, SessionLocal, TravelHistory, EmploymentHistory, ResidenceHistory,
-    ImmigrationCase, CaseEvent, Task, Note, Contact
+    ImmigrationCase, CaseEvent, Task, Note, Contact, Document
 )
+from .services.uscis import get_uscis_service
 
 app = FastAPI(title="LifeBridge Tracker API", version="1.0.0")
 
@@ -141,7 +142,7 @@ class DocumentEntry(BaseModel):
     upload_date: Optional[date] = None
     case_id: Optional[int] = None
 
-from .models import Document
+# --- Documents ---
 
 @app.get("/v1/documents")
 def get_documents(db: Session = Depends(get_db)):
@@ -291,8 +292,7 @@ class CaseEventEntry(BaseModel):
     description: Optional[str] = None
     event_type: str
 
-from .models import ImmigrationCase, CaseEvent
-from .services.uscis import get_uscis_service
+# --- Endpoints ---
 
 @app.get("/v1/cases")
 def get_cases(db: Session = Depends(get_db)):
@@ -367,22 +367,24 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Case has no receipt number")
 
     # 2. Call USCIS Service
-    from .services.uscis import get_uscis_service
-    print(f"DEBUG: Calling USCIS service for receipt {db_case.receipt_number}")
+    receipt = db_case.receipt_number.strip().upper()
+    print(f"DEBUG: Calling USCIS service for receipt {receipt}")
     service = await get_uscis_service()
-    result = await service.check_status(db_case.receipt_number)
+    result = await service.check_status(receipt)
     print(f"DEBUG: USCIS Result: {result.get('status')} - {result.get('detail')[:50]}...")
     
     # 3. Update case status if valid (Exclude both tech errors and access blocks)
     bad_statuses = ["Error", "Invalid Receipt", "Unknown", "Access Denied", "Connection Error"]
-    if result["status"] not in bad_statuses:
+    result_status = result.get("status", "Unknown")
+    
+    if result_status not in bad_statuses:
         # Only update if meaningful
-        db_case.status = result["status"]
+        db_case.status = result_status
         
         # Log event
         existing_event = db.query(CaseEvent).filter(
             CaseEvent.case_id == case_id, 
-            CaseEvent.title == result["status"],
+            CaseEvent.title == result_status,
             CaseEvent.event_date == date.today()
         ).first()
         
@@ -390,19 +392,19 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
             new_event = CaseEvent(
                 case_id=case_id,
                 event_date=date.today(),
-                title=result["status"],
-                description=result["detail"],
+                title=result_status,
+                description=result.get("detail", ""),
                 event_type="status_update"
             )
             db.add(new_event)
-            print(f"DEBUG: Added new case event: {result['status']}")
+            print(f"DEBUG: Added new case event: {result_status}")
             
         db.commit()
         db.refresh(db_case)
         
     return {
         "case_id": case_id,
-        "receipt": db_case.receipt_number,
+        "receipt": receipt,
         "uscis_status": result
     }
 
