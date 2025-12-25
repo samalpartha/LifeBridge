@@ -7,128 +7,106 @@ LifeBridge is an end-to-end, AI-powered platform designed to make global mobilit
 
 ---
 
-## 🚀 Project Overview
-
-### The Problem
-Moving across borders is one of the most stressful and complex human experiences.
-*   **Information Asymmetry**: Immigration laws are complex, changing, and buried in legalese.
-*   **Fragmented Systems**: Applicants juggle disparate checklists, government portals, and physical documents.
-*   **High Barriers**: Legal assistance is often prohibitively expensive, leaving millions to navigate the system alone.
-
-### The Solution
-LifeBridge acts as an **AI Co-pilot for Global Mobility**. It unifies the entire journey—from initial discovery to final approval—into a single, intelligent workspace.
-*   **Understand**: AI analyzes user intent and documents to generate tailored checklists.
-*   **Manage**: A "Case Spine" tracks every deadline, document, and task.
-*   **Connect**: Location intelligence and effective AI search connect users to real-world support (Embassies & Attorneys).
+## 🚀 Live Demo
+*   **Web Portal**: [life-bridge-peach.vercel.app](https://life-bridge-peach.vercel.app)
+*   **Core AI API**: [modest-wholeness-production-b698.up.railway.app](https://modest-wholeness-production-b698.up.railway.app)
+*   **Case Tracker API**: [lifebridge-production.up.railway.app](https://lifebridge-production.up.railway.app)
 
 ---
 
-## 🧠 How We Use AI (Meaningful Innovation)
-
-We don't just "wrap" an LLM; we use AI to perform specialized cognitive tasks that were previously manual bottlenecks:
-
-1.  **Intelligent Document Analysis ("The Clerk")**:
-    *   **OCR & extraction** digitize physical documents.
-    *   **Reasoning Agents** analyze documents for validity, expiration risks, and inconsistencies (e.g., "Passport expires before visa duration").
-
-2.  **Generative Reasoning ("The Guide")**:
-    *   LifeBridge uses **Google Gemini** to synthesize complex government requirements into simple, step-by-step plans tailored to the user's specific background.
-
-3.  **AI-Powered Directory ("The Network")**:
-    *   Unlike static directories, our **Attorney Search** uses AI to interpret natural language queries (e.g., "Spanish speaking lawyer for H1B in Miami") and aggregates scattered public contact info into actionable "Contact Cards".
+## 🧠 Project Goal
+The primary objective of LifeBridge is to democratize legal and immigration assistance. We aim to reduce the "complexity tax" paid by migrants by providing a unified, intelligent workspace that handles document analysis, regulatory research, and case tracking automatically.
 
 ---
 
-## ⚡ Key Features
+## 🏗️ System Architecture
 
-*   **🔍 Smart Intake & Checklist**: Converts a simple interview into a rigorous, evidence-linked project plan.
-*   **📂 Digital Vault**: Secure storage that "reads" your files, tagging them automatically.
-*   **🛡️ Risk Register**: Proactive warnings about gaps in your application before you file.
-*   **🗺️ Location Intelligence**: Instant mapping of nearby Embassies and Consulates.
-*   **🗣️ Voice & Multi-language**: Accessible design with text-to-speech and English/Spanish support for inclusive access.
-*   **🤝 Collaborative Tracker**: A "TurboTax-like" experience for managing travel history, employment records, and tasks.
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-LifeBridge adheres to a modern, scalable microservices architecture.
-
-### **Frontend**
-*   **Next.js 14 (App Router)**: Fast, server-rendered React application.
-*   **Tailwind CSS & Framer Motion**: Responsive, accessible, and "wow"-factor design.
-*   **Lucide React**: Consistent, high-quality iconography.
-
-### **Backend & AI**
-*   **FastAPI (Python)**: High-performance API layer.
-*   **Google Gemini (via Vertex AI/Studio)**: The core reasoning engine.
-*   **LangChain**: Orchestrating document splitting and context management.
-*   **OCR Tools**: PyTesseract & PDFPlumber for ingestion.
-
-### **Data & Infrastructure**
-*   **PostgreSQL**: Relational storage for structured case data.
-*   **MinIO (S3 Compatible)**: Object storage for document artifacts.
-*   **Docker Compose**: Fully containerized local development environment.
+Our architecture is designed for scalability, security, and intelligence, splitting responsibilities between a high-performance frontend and specialized microservices.
 
 ```mermaid
 graph TD
-    User["User (Browser)"]
+    User(["User (Browser)"])
     
-    subgraph "Frontend"
-        NextJS["Next.js Web App"]
+    subgraph "Vercel Cloud"
+        NextJS["Next.js Web App (Frontend)"]
+        UI["Rich UI / Framer Motion"]
     end
     
-    subgraph "Intelligent Core"
-        CoreAPI["Core API (AI Agents)"]
-        TrackerAPI["Tracker API (Case Logic)"]
-        Gemini["Google Gemini Models"]
+    subgraph "Railway Backend"
+        CoreAPI["Core API (Python/FastAPI)"]
+        TrackerAPI["Tracker API (Python/FastAPI)"]
+        UscisScraper["USCIS Status Scraper"]
     end
     
-    subgraph "Persistence"
-        DB[("PostgreSQL")]
-        S3[("MinIO Object Storage")]
+    subgraph "AI & Intelligence"
+        Gemini["Google Gemini Pro 1.5"]
+        DocAI["Document Reasoning Engine"]
+    end
+    
+    subgraph "SaaS Persistence"
+        SupabaseDB[("PostgreSQL (Supabase/Railway)")]
+        SupabaseS3[("S3 Storage (Supabase)")]
     end
 
-    User -->|Interaction| NextJS
-    NextJS -->|Process Docs| CoreAPI
-    NextJS -->|Manage Case| TrackerAPI
+    User -->|HTTPS| NextJS
+    NextJS -->|AI Queries/Docs| CoreAPI
+    NextJS -->|Case Management| TrackerAPI
     
-    CoreAPI -->|Reasoning| Gemini
-    TrackerAPI -->|Search/Extract| Gemini
+    CoreAPI -->|Cognitive Tasks| Gemini
+    TrackerAPI -->|Live Status| UscisScraper
+    UscisScraper -->|Scrape| USCIS["USCIS Government Website"]
     
-    CoreAPI & TrackerAPI -->|Store Data| DB
-    CoreAPI & TrackerAPI -->|Store Files| S3
+    CoreAPI & TrackerAPI -->|Relational Data| SupabaseDB
+    CoreAPI & TrackerAPI -->|Secure Files| SupabaseS3
 ```
 
 ---
 
-## 🎥 Demo & Setup
+## 🛠️ Tech Stack
 
-### [Link to Demo Video (YouTube/Loom)]
-*(Please insert your 2-5 min video link here)*
+### **Frontend Excellence**
+*   **Next.js 14**: Leveraging App Router for high-performance streaming and SSR.
+*   **Vanilla CSS + Tailwind**: Custom-tuned design system with a premium "Glassmorphism" aesthetic.
+*   **Framer Motion**: Smooth micro-animations for an interactive feel.
+*   **Lucide React**: Clean, modern iconography.
 
-### Quickstart Guide
+### **Intelligence Layer**
+*   **Google Gemini Pro**: Orchestrates document synthesis, risk analysis, and attorney search.
+*   **FastAPI**: Asynchronous Python framework powering our dual-API backbone.
+*   **BeautifulSoup4**: Robust scraper for live government status updates.
 
-1.  **Prerequisites**: Docker & Docker Compose, Google API Key.
-2.  **Clone**: `git clone <repo-url>`
-3.  **Configure**: Create `.env` with your `GOOGLE_API_KEY`.
-4.  **Run**:
-    ```bash
-    docker compose up --build
-    ```
-5.  **Access**:
-    *   App: `http://localhost:3000`
-    *   Docs: `http://localhost:8000/docs`
+### **Infrastructure & Security**
+*   **Supabase**: Managed PostgreSQL and S3-compatible Object Storage for production-grade reliability.
+*   **Railway**: Containerized deployment for Core and Tracker services.
+*   **Vercel**: Global Edge hosting for the frontend.
+
+---
+
+## 📂 Environment Setup
+
+To run LifeBridge locally or in production, ensure the following variables are configured:
+
+### **Required Backend Keys**
+*   `DATABASE_URL`: Your PostgreSQL connection string (Postgres/Supabase).
+*   `GOOGLE_API_KEY`: Your Google AI Studio/Vertex API Key.
+*   `CORS_ORIGINS`: `*` (for development) or your Vercel URL (for production).
+
+### **Storage (S3 Compatible)**
+*   `S3_ENDPOINT`: Your endpoint (e.g., Supabase S3 URL).
+*   `S3_ACCESS_KEY`: Access key for bucket.
+*   `S3_SECRET_KEY`: Secret key for bucket.
+*   `S3_BUCKET_NAME`: `lifebridge-documents`.
+
+### **Frontend Keys**
+*   `NEXT_PUBLIC_API_URL`: URL of the Core API service.
+*   `TRACKER_API_URL`: URL of the Tracker API service.
 
 ---
 
 ## 👥 Team Information
-
 *   **Partha Samal** - Developer - *psama0214@gmail.com*
-*   *[Add Team Member Name]* - *[Role]* - *[Email]*
 
 ---
 
 ## License
-
 MIT License. Open exploration for a borderless world.

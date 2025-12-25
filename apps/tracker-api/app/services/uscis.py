@@ -93,9 +93,6 @@ class USCISService:
         except Exception as e:
             return {"status": "Error", "detail": f"Connection Error: {str(e)}"}
 
-        except Exception as e:
-            return {"status": "Error", "detail": str(e)}
-
 uscis_service = USCISService()
 
 async def get_uscis_service() -> USCISService:

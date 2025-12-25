@@ -4,7 +4,10 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import date
-from .models import init_db, SessionLocal, TravelHistory, EmploymentHistory, ResidenceHistory
+from .models import (
+    init_db, SessionLocal, TravelHistory, EmploymentHistory, ResidenceHistory,
+    ImmigrationCase, CaseEvent, Task, Note, Contact
+)
 
 app = FastAPI(title="LifeBridge Tracker API", version="1.0.0")
 
