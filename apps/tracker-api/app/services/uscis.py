@@ -39,24 +39,34 @@ class USCISService:
 
                 soup = BeautifulSoup(resp.text, "html.parser")
                 
-                # USCIS structure usually puts the status in a specific div
-                # The structure is often: <div class="rows text-center"> <h1>Case Was Received</h1> <p>On ...</p> </div>
-                
+                # Find the main status area even if class names changed
                 status_header = soup.find("div", class_="rows text-center")
                 
-                if not status_header:
-                    # Check for error message
-                    error_msg = soup.find("div", id="formErrorMessages")
-                    if error_msg and "Validation Error" in error_msg.text:
-                        return {"status": "Invalid Receipt", "detail": "The receipt number is invalid."}
-                    return {"status": "Unknown", "detail": "Could not parse status from USCIS response"}
+                title_tag = None
+                body_tag = None
 
-                title = status_header.find("h1")
-                body = status_header.find("p")
+                if status_header:
+                    title_tag = status_header.find("h1")
+                    body_tag = status_header.find("p")
+                else:
+                    # Fallback: Search for any h1 that looks like a status
+                    for h1 in soup.find_all("h1"):
+                        text = h1.get_text().strip()
+                        if text and any(word in text.lower() for word in ["case", "request", "notice", "approved", "received"]):
+                            title_tag = h1
+                            # Body is usually the very next p
+                            body_tag = h1.find_next("p")
+                            break
                 
+                if not title_tag:
+                    # Check for validation error explicitly
+                    if "Validation Error" in resp.text:
+                         return {"status": "Invalid Receipt", "detail": "The receipt number is invalid."}
+                    return {"status": "Unknown", "detail": "Could not parse status. The USCIS page structure may have changed."}
+
                 return {
-                    "status": title.get_text(strip=True) if title else "Status Found",
-                    "detail": body.get_text(strip=True) if body else ""
+                    "status": title_tag.get_text(strip=True),
+                    "detail": body_tag.get_text(strip=True) if body_tag else ""
                 }
 
         except Exception as e:
