@@ -16,9 +16,12 @@ if not DATABASE_URL:
         DATABASE_URL = os.getenv("POSTGRES_URL")
 
 
-# Fix for Render/Supabase: Force psycopg 3 driver
-if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
-    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+# Fix for Railway/Render/Supabase: Force psycopg 3 driver
+if DATABASE_URL:
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    elif DATABASE_URL.startswith("postgresql://") and "+psycopg" not in DATABASE_URL:
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 # Disable prepared statements for Supavisor Transaction Pooler
 connect_args = {"prepare_threshold": None}
