@@ -24,8 +24,18 @@ if DATABASE_URL:
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
 # Disable prepared statements for Supavisor Transaction Pooler
-connect_args = {"prepare_threshold": None}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+connect_args = {
+    "prepare_threshold": None,
+    "connect_timeout": 10  # 10s timeout for connection
+}
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args=connect_args,
+    pool_pre_ping=True,      # Check connection before using
+    pool_recycle=300,        # Recycle connections every 5 mins
+    pool_size=10,            # Sufficient pool size
+    max_overflow=20
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
