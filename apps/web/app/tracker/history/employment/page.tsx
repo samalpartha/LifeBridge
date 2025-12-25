@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Save, Briefcase } from "lucide-react";
+import { Save, Briefcase, Trash2 } from "lucide-react";
 import { trackerApi, EmploymentEntry } from "@/features/tracker/api/client";
 
 import toast from "react-hot-toast";
@@ -58,6 +58,17 @@ export default function EmploymentPage() {
         }
     };
 
+    const handleDelete = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this entry?")) return;
+        try {
+            await trackerApi.deleteEmploymentEntry(id);
+            setEntries(entries.filter(e => e.id !== id));
+            toast.success("Entry deleted");
+        } catch (e) {
+            toast.error("Failed to delete entry");
+        }
+    };
+
     return (
         <div className="space-y-8">
             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -98,7 +109,7 @@ export default function EmploymentPage() {
             <div className="space-y-4">
                 <h2 className="text-lg font-bold text-gray-900">Employment History</h2>
                 {entries.map((entry, i) => (
-                    <motion.div key={entry.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                    <motion.div key={entry.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center group/item">
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-purple-50 rounded-full flex items-center justify-center text-purple-600">
                                 <Briefcase size={20} />
@@ -108,9 +119,18 @@ export default function EmploymentPage() {
                                 <p className="text-xs text-gray-500">{entry.city}, {entry.state}</p>
                             </div>
                         </div>
-                        <div className="text-right">
-                            <p className="text-sm font-medium text-gray-700">{entry.start_date}</p>
-                            {entry.end_date && <p className="text-xs text-gray-400">to {entry.end_date}</p>}
+                        <div className="flex items-center gap-4">
+                            <div className="text-right">
+                                <p className="text-sm font-medium text-gray-700">{entry.start_date}</p>
+                                {entry.end_date && <p className="text-xs text-gray-400">to {entry.end_date}</p>}
+                            </div>
+                            <button
+                                onClick={() => entry.id && handleDelete(entry.id)}
+                                className="p-2 text-gray-400 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all"
+                                title="Delete Entry"
+                            >
+                                <Trash2 size={16} />
+                            </button>
                         </div>
                     </motion.div>
                 ))}

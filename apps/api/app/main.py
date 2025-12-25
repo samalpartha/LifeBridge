@@ -28,13 +28,12 @@ from .services.extract import extract_text
 from .services.reason import build_reasoning
 from .services.storage import get_store
 from .services.export import export_case_json, export_case_markdown
-from .routers import knowledge
+from .routers import knowledge, attorneys
 from .utils.logger import configure_logging, get_logger
 
 # Configure logging
 configure_logging()
 logger = get_logger(__name__)
-
 
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
@@ -42,7 +41,6 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
-
 
 app = FastAPI(
     title="LifeBridge API",
@@ -53,6 +51,7 @@ app = FastAPI(
 )
 
 app.include_router(knowledge.router) # Knowledge base routes
+app.include_router(attorneys.router) # Attorney search routes
 
 # CORS configuration
 allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")

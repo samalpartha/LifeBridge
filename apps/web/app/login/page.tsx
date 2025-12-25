@@ -4,6 +4,7 @@ import { useAuth } from "@/app/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -39,10 +40,16 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div onClick={() => router.push("/")} className="mx-auto h-12 w-12 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg cursor-pointer">
-                    <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+                <div onClick={() => router.push("/")} className="mx-auto flex justify-center mb-6 cursor-pointer">
+                    <div className="relative w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center overflow-hidden border border-gray-100">
+                        <Image
+                            src="/icon.png"
+                            alt="LifeBridge Logo"
+                            width={80}
+                            height={80}
+                            className="object-contain p-2"
+                        />
+                    </div>
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                     Sign in to your account

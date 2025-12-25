@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Search, MapPin, Phone, Mail, Award, Globe, Navigation, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { Search, MapPin, Phone, Mail, Globe, Star, Gavel, X } from "lucide-react";
 import dynamic from "next/dynamic";
 
 // Dynamically import Map to avoid SSR issues
 const AttorneyMap = dynamic(() => import("../components/AttorneyMap"), {
     ssr: false,
-    loading: () => <div className="h-[500px] w-full bg-gray-100 animate-pulse rounded-xl flex items-center justify-center text-gray-400">Loading Map...</div>
+    loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-xl flex items-center justify-center text-gray-400">Loading Map...</div>
 });
 
 interface Attorney {
-    id: number;
+    id: string;
     name: string;
     firm: string;
     practice_area: string;
@@ -21,10 +19,13 @@ interface Attorney {
     reviews: number;
     location_text: string;
     image: string;
-    email: string;
-    phone: string;
+    email?: string;
+    phone?: string;
+    website?: string;
     address?: string;
+    bio?: string;
     location?: [number, number];
+    confidence_score?: number;
 }
 
 // Zippopotam.us Integration
@@ -60,56 +61,57 @@ export default function AttorneysPage() {
     const [loading, setLoading] = useState(false);
     const [showMap, setShowMap] = useState(false);
     const [mapCenter, setMapCenter] = useState<[number, number]>([39.8283, -98.5795]); // US Center
+    const [selectedAttorney, setSelectedAttorney] = useState<Attorney | null>(null);
 
     const fetchAttorneys = async () => {
-        if (!zipcode) return;
+        if (!zipcode && !searchQuery) return;
         setLoading(true);
 
         try {
-            // 1. Get Location from Zip
-            const locationData = await fetchZipLocation(zipcode);
+            // 1. Get Location from Zip (Client-side for Map Coordinates)
+            let locationData: ZipLocation | null = null;
+            if (zipcode) {
+                locationData = await fetchZipLocation(zipcode);
+            }
 
-            // 2. Fetch from CourtListener (Real Data)
-            const response = await fetch(`https://www.courtlistener.com/api/rest/v4/attorneys/?q=${zipcode}`);
+            // 2. Fetch from Backend (Compliance & Data)
+            const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+            const params = new URLSearchParams();
+            if (zipcode) params.append("zip", zipcode);
+            if (searchQuery) params.append("query", searchQuery);
+
+            const response = await fetch(`${API_BASE}/attorneys/search?${params.toString()}`);
+
+            if (!response.ok) {
+                throw new Error("Failed to search attorneys");
+            }
+
             const data = await response.json();
+            const results = data.results || [];
 
             // 3. Transform Data
-            // CourtListener API returns 'results'. We map them to our UI model.
-            const realAttorneys: Attorney[] = (data.results || []).slice(0, 10).map((record: any, index: number) => ({
-                id: parseInt(record.id) || index,
-                name: record.name || "Unknown Attorney",
-                firm: record.party_name || "Private Practice", // Approximation
-                practice_area: record.practice_areas?.[0] || "Immigration Law",
-                rating: 4.5 + (Math.random() * 0.5), // Mock rating for display
-                reviews: Math.floor(Math.random() * 100) + 10,
-                location_text: record.address || (locationData ? `${locationData.city}, ${locationData.state}` : "United States"),
-                image: `https://api.dicebear.com/7.x/initials/svg?seed=${record.name}`,
-                email: "contact@example.com", // Privacy protection
-                phone: "+1 (555) 012-3456",
+            const mappedAttorneys: Attorney[] = results.map((record: any) => ({
+                id: record.id,
+                name: record.name,
+                firm: record.firm || "Private Practice",
+                practice_area: record.practice_area || ("Immigration Law"),
+                rating: record.rating || 4.5,
+                reviews: record.reviews || 0,
+                location_text: record.location_text || (locationData ? `${locationData.city}, ${locationData.state}` : "United States"),
+                image: record.image || `https://api.dicebear.com/7.x/initials/svg?seed=${record.name}`,
+                email: record.email || "contact@legal-network.example.com",
+                phone: record.phone || "+1 (555) 012-3456",
+                website: record.website || "#",
+                address: record.address || record.location_text,
+                bio: record.bio || "Experienced legal professional.",
                 location: locationData ? [
                     locationData.lat + (Math.random() * 0.02 - 0.01),
                     locationData.lng + (Math.random() * 0.02 - 0.01)
-                ] : undefined
+                ] : undefined,
+                confidence_score: record.confidence_score
             }));
 
-            // Fallback if API returns nothing (to show *something* in demo)
-            if (realAttorneys.length === 0 && locationData) {
-                realAttorneys.push({
-                    id: 999,
-                    name: "Sarah Jenkins",
-                    firm: "LifeBridge General Counsel",
-                    practice_area: "Immigration",
-                    rating: 5.0,
-                    reviews: 120,
-                    location_text: `${locationData.city}, ${locationData.state}`,
-                    image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah",
-                    email: "sarah@lifebridge.app",
-                    phone: "+1 (555) 999-9999",
-                    location: [locationData.lat, locationData.lng]
-                });
-            }
-
-            setAttorneys(realAttorneys);
+            setAttorneys(mappedAttorneys);
             if (locationData) {
                 setMapCenter([locationData.lat, locationData.lng]);
                 setShowMap(true);
@@ -123,150 +125,202 @@ export default function AttorneysPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Search Header */}
-            <div className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 py-4">
-                    <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-                        <h1 className="text-2xl font-bold text-gray-900">Legal Network</h1>
-                        <div className="flex-1 flex space-x-2">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <input
-                                    type="text"
-                                    placeholder="Attorney Name or Firm..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                />
-                            </div>
-                            <div className="relative w-48">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-                                <input
-                                    type="text"
-                                    placeholder="Zip Code (e.g. 10001)"
-                                    value={zipcode}
-                                    onChange={(e) => setZipcode(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                />
-                            </div>
-                            <button
-                                onClick={fetchAttorneys}
-                                disabled={!zipcode}
-                                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-                            >
-                                {loading ? "Searching..." : "Search"}
-                            </button>
-                        </div>
-                        <button
-                            onClick={() => setShowMap(!showMap)}
-                            className={`p-2 rounded-lg border ${showMap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-300 text-gray-600'}`}
-                        >
-                            <Globe className="w-5 h-5" />
-                        </button>
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+            {/* Header */}
+            <div className="bg-white border-b sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-indigo-600 font-bold text-xl">
+                        <Gavel className="w-6 h-6" />
+                        <span>LegalConnect</span>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                        Verified Professional Directory
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* List View */}
-                    <div className={`${showMap ? 'lg:col-span-2' : 'lg:col-span-3'} space-y-6`}>
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start space-x-3">
-                            <ShieldCheck className="w-5 h-5 text-blue-600 mt-0.5" />
-                            <div>
-                                <h3 className="text-sm font-semibold text-blue-900">Verified Database</h3>
-                                <p className="text-xs text-blue-700 mt-1">
-                                    Results sourced from the Free Law Project & CourtListener. Always verify credentials independently.
-                                </p>
-                            </div>
-                        </div>
+            <main className="flex-1 flex flex-col lg:flex-row max-w-7xl mx-auto w-full p-4 gap-6">
+                {/* Left Panel: Search & List */}
+                <div className="w-full lg:w-1/3 flex flex-col gap-6">
 
-                        {loading ? (
-                            <div className="space-y-4">
-                                {[1, 2, 3].map((i) => (
-                                    <div key={i} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse h-40"></div>
-                                ))}
+                    {/* Search Box */}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                        <h1 className="text-2xl font-bold text-gray-900">Find an Attorney</h1>
+                        <p className="text-gray-500 text-sm">Use AI to find verified immigration experts near you.</p>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Location</label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="Enter ZIP Code (e.g. 10001)"
+                                        className="w-full pl-10 h-11 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        value={zipcode}
+                                        onChange={(e) => setZipcode(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                        ) : attorneys.length > 0 ? (
-                            attorneys.map((attorney) => (
-                                <motion.div
-                                    key={attorney.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col md:flex-row gap-6"
-                                >
-                                    <div className="flex-shrink-0">
-                                        <div className="relative w-24 h-24">
-                                            <Image
-                                                src={attorney.image}
-                                                alt={attorney.name}
-                                                fill
-                                                className="rounded-full object-cover border-4 border-gray-50"
-                                            />
-                                            {attorney.rating >= 4.5 && (
-                                                <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-full flex items-center shadow-sm">
-                                                    <Award className="w-3 h-3 mr-1" />
-                                                    {attorney.rating.toFixed(1)}
-                                                </div>
+
+                            <div>
+                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Name or Firm (Optional)</label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. 'Smith Law' or 'John Doe'"
+                                        className="w-full pl-10 h-11 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={fetchAttorneys}
+                                disabled={loading || (!zipcode && !searchQuery)}
+                                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading ? "Searching..." : "Search Attorneys"}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Results List */}
+                    <div className="flex-1 overflow-y-auto space-y-4 min-h-[400px]">
+                        {attorneys.length === 0 && !loading && (
+                            <div className="text-center py-12 text-gray-400">
+                                <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                                <p>Enter a ZIP code or Name to start searching</p>
+                            </div>
+                        )}
+
+                        {attorneys.map((attorney) => (
+                            <div
+                                key={attorney.id}
+                                onClick={() => setSelectedAttorney(attorney)}
+                                className="bg-white p-4 rounded-xl border border-gray-200 hover:border-indigo-300 hover:shadow-md transition-all cursor-pointer group"
+                            >
+                                <div className="flex gap-4">
+                                    <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                        <img src={attorney.image} alt={attorney.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-gray-900 truncate group-hover:text-indigo-600 transition-colors">
+                                            {attorney.name}
+                                        </h3>
+                                        <p className="text-sm text-indigo-600 font-medium truncate">{attorney.firm}</p>
+                                        <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
+                                            <MapPin className="w-3 h-3" />
+                                            <span className="truncate">{attorney.location_text}</span>
+                                        </div>
+                                        <div className="flex items-center gap-3 mt-2">
+                                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded text-xs font-medium text-yellow-700">
+                                                <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                                                {attorney.rating.toFixed(1)}
+                                            </div>
+                                            <span className="text-xs text-gray-400">{attorney.reviews} reviews</span>
+                                            {attorney.confidence_score && (
+                                                <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">
+                                                    {(attorney.confidence_score * 100).toFixed(0)}% Match
+                                                </span>
                                             )}
                                         </div>
                                     </div>
-
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h2 className="text-xl font-bold text-gray-900">{attorney.name}</h2>
-                                                <p className="text-blue-600 font-medium">{attorney.firm}</p>
-                                            </div>
-                                            <div className="flex items-center space-x-1 text-sm text-gray-500">
-                                                <MapPin className="w-4 h-4" />
-                                                <span>{attorney.location_text}</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-4 grid grid-cols-2 gap-4">
-                                            <div className="bg-gray-50 p-3 rounded-lg">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Practice Area</p>
-                                                <p className="font-medium text-gray-900">{attorney.practice_area}</p>
-                                            </div>
-                                            <div className="bg-gray-50 p-3 rounded-lg">
-                                                <p className="text-xs text-gray-500 uppercase tracking-wide">Reviews</p>
-                                                <p className="font-medium text-gray-900">{attorney.reviews} Verified Clients</p>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-6 flex items-center space-x-3">
-                                            <button className="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center font-medium">
-                                                <Mail className="w-4 h-4 mr-2" />
-                                                Contact
-                                            </button>
-                                            <button className="flex-1 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center justify-center font-medium">
-                                                <Phone className="w-4 h-4 mr-2" />
-                                                Call
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))
-                        ) : (
-                            <div className="text-center py-20 bg-white rounded-xl border border-dashed border-gray-300">
-                                <Navigation className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                                <p className="text-gray-500">Enter a zipcode to find nearby attorneys.</p>
+                                </div>
                             </div>
-                        )}
+                        ))}
                     </div>
+                </div>
 
-                    {/* Map View */}
-                    {showMap && (
-                        <div className="lg:col-span-1">
-                            <div className="sticky top-24">
-                                <AttorneyMap attorneys={attorneys} center={mapCenter} />
-                            </div>
+                {/* Right Panel: Map */}
+                <div className="hidden lg:block w-2/3 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden sticky top-24 h-[calc(100vh-8rem)]">
+                    {showMap ? (
+                        <div className="w-full h-full">
+                            <AttorneyMap attorneys={attorneys} center={mapCenter} />
+                        </div>
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400 flex-col gap-4">
+                            <MapPin className="w-16 h-16 opacity-20" />
+                            <p>Map view will update when you search</p>
                         </div>
                     )}
                 </div>
+            </main>
+
+            {/* Disclaimer */}
+            <div className="bg-gray-50 border-t py-4 text-center text-xs text-gray-400">
+                Information sourced from public records and AI generation. Always verify credentials independently.
             </div>
+
+            {/* Contact Details Modal */}
+            {selectedAttorney && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="relative h-32 bg-gradient-to-r from-indigo-500 to-purple-600">
+                            <button
+                                onClick={() => setSelectedAttorney(null)}
+                                className="absolute top-4 right-4 bg-black/20 hover:bg-black/40 text-white rounded-full p-1.5 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="px-6 pb-6 -mt-12 relative">
+                            <div className="w-24 h-24 rounded-full border-4 border-white bg-white shadow-md overflow-hidden mb-4">
+                                <img src={selectedAttorney.image} alt={selectedAttorney.name} className="w-full h-full object-cover" />
+                            </div>
+
+                            <h2 className="text-2xl font-bold text-gray-900">{selectedAttorney.name}</h2>
+                            <p className="text-indigo-600 font-medium mb-4">{selectedAttorney.firm}</p>
+
+                            <div className="space-y-4">
+                                <p className="text-sm text-gray-600 leading-relaxed italic">
+                                    "{selectedAttorney.bio}"
+                                </p>
+
+                                <div className="space-y-3 pt-4 border-t border-gray-100">
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact Information</h4>
+
+                                    <div className="flex items-center gap-3 text-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <Phone className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-sm font-medium">{selectedAttorney.phone}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <Mail className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-sm font-medium">{selectedAttorney.email}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <Globe className="w-4 h-4" />
+                                        </div>
+                                        <a href={selectedAttorney.website} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-indigo-600 hover:underline truncate">
+                                            {selectedAttorney.website}
+                                        </a>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-gray-700">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                            <MapPin className="w-4 h-4" />
+                                        </div>
+                                        <span className="text-sm font-medium">{selectedAttorney.address}</span>
+                                    </div>
+                                </div>
+
+                                <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-200 mt-2">
+                                    Contact Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

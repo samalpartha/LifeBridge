@@ -148,6 +148,13 @@ export function Sidebar() {
                     <LogOut size={16} />
                     Log Out
                 </button>
+
+                <div className="px-3 pt-2 border-t border-gray-100">
+                    <p className="text-[10px] text-gray-400 leading-tight text-center">
+                        Not a law firm. Information only. <br />
+                        <Link href="/terms" className="underline hover:text-gray-600">Terms</Link> • <Link href="/privacy" className="underline hover:text-gray-600">Privacy</Link>
+                    </p>
+                </div>
             </div>
         </div>
     );

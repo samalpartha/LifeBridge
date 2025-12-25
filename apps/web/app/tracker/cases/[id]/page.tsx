@@ -3,21 +3,20 @@
 import { useState, useEffect } from "react";
 import {
     ArrowLeft,
-    Calendar,
-    FileText,
-    CheckCircle,
     Clock,
     RefreshCw,
     AlertCircle,
     X,
     Edit,
-    Upload,
+    FileText,
+    CheckCircle,
     Trash2
 } from "lucide-react";
 import { trackerApi, CaseEntry, CaseEventEntry } from "@/features/tracker/api/client";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import EditCaseModal from "../../../components/EditCaseModal";
 
 export default function CaseDashboard() {
     const router = useRouter();
@@ -145,8 +144,15 @@ export default function CaseDashboard() {
 
                     <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                         <div>
-                            <div className="flex items-center gap-4 mb-2">
+                            <div className="flex items-center gap-4 mb-2 group">
                                 <h1 className="text-3xl font-bold text-gray-900">{caseData.title}</h1>
+                                <button
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Edit Case Details"
+                                >
+                                    <Edit size={18} />
+                                </button>
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseData.status)}`}>
                                     {caseData.status}
                                 </span>
@@ -202,6 +208,13 @@ export default function CaseDashboard() {
                     </div>
                 </div>
             </div>
+            {/* Legal Disclaimer */}
+            <div className="bg-blue-50 border-b border-blue-100 text-center py-2 px-4 shadow-sm relative z-10">
+                <p className="text-xs text-blue-800 flex items-center justify-center gap-2">
+                    <AlertCircle size={14} />
+                    <span className="font-semibold">Not Legal Advice:</span> LifeBridge is a self-help tool. Consult an attorney for legal advice.
+                </p>
+            </div>
 
             <div className="max-w-7xl mx-auto px-8 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -233,6 +246,30 @@ export default function CaseDashboard() {
                                     </div>
                                 </div>
                             ))}
+
+                            {/* Future Steps (Visual Placeholder) */}
+                            {events.length > 0 && (
+                                <div className="relative group opacity-50 grayscale">
+                                    <div className="absolute -left-[41px] h-6 w-6 rounded-full border-4 border-white shadow-sm flex items-center justify-center bg-gray-300">
+                                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-transparent border-dashed border-gray-300">
+                                        <h3 className="text-lg font-semibold text-gray-500">Upcoming: Biometrics Appointment</h3>
+                                        <p className="text-gray-400 mt-1 text-sm">Estimated 3-5 months after filing</p>
+                                    </div>
+                                </div>
+                            )}
+                            {events.length > 0 && (
+                                <div className="relative group opacity-40 grayscale">
+                                    <div className="absolute -left-[41px] h-6 w-6 rounded-full border-4 border-white shadow-sm flex items-center justify-center bg-gray-200">
+                                        <div className="w-2 h-2 rounded-full bg-white"></div>
+                                    </div>
+                                    <div className="bg-gray-50 p-4 rounded-lg border border-transparent border-dashed border-gray-300">
+                                        <h3 className="text-lg font-semibold text-gray-500">Upcoming: Decision</h3>
+                                        <p className="text-gray-400 mt-1 text-sm">Target: ~11 months</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -277,55 +314,14 @@ export default function CaseDashboard() {
             </div>
 
             {/* Edit Case Modal */}
-            {isEditModalOpen && caseData && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-scale-in">
-                        <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X size={20} /></button>
-                        <h3 className="text-xl font-bold mb-4">Edit Case Details</h3>
-                        <form onSubmit={(e) => {
-                            e.preventDefault();
-                            const formData = new FormData(e.currentTarget);
-                            handleUpdateCase({
-                                ...caseData,
-                                receipt_number: formData.get('receipt_number') as string,
-                                filing_date: formData.get('filing_date') as string,
-                                priority_date: formData.get('priority_date') as string,
-                                status: formData.get('status') as string
-                            });
-                        }} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Receipt Number</label>
-                                <input name="receipt_number" defaultValue={caseData.receipt_number || ''} className="w-full border rounded p-2" placeholder="e.g. IOE123..." />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Filing Date</label>
-                                <input type="date" name="filing_date" defaultValue={caseData.filing_date} className="w-full border rounded p-2" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Priority Date</label>
-                                <input type="date" name="priority_date" defaultValue={caseData.priority_date} className="w-full border rounded p-2" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Status</label>
-                                <select name="status" defaultValue={caseData.status} className="w-full border rounded p-2">
-                                    <option>Open</option>
-                                    <option>Pending</option>
-                                    <option>Case Received</option>
-                                    <option>Request for Evidence</option>
-                                    <option>Approved</option>
-                                    <option>Closed</option>
-                                </select>
-                            </div>
-                            <div className="flex justify-end gap-2 pt-4">
-                                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded">Cancel</button>
-                                <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save Changes</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <EditCaseModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleUpdateCase}
+                initialData={caseData}
+            />
 
-            {/* Document Upload Modal (Reuse Logic) */}
+            {/* Document Upload Modal */}
             {isDocModalOpen && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative animate-scale-in">

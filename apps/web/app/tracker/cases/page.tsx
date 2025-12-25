@@ -168,12 +168,26 @@ export default function CasesPage() {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                        <input
-                                            className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                                        <select
+                                            className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                                             value={newItem.case_type}
                                             onChange={e => setNewItem({ ...newItem, case_type: e.target.value })}
-                                            placeholder="e.g. I-130"
-                                        />
+                                        >
+                                            <option value="I-130 (Petition for Alien Relative)">I-130 (Petition for Alien Relative)</option>
+                                            <option value="I-140 (Immigrant Petition for Alien Worker)">I-140 (Immigrant Petition for Alien Worker)</option>
+                                            <option value="I-485 (Adjustment of Status)">I-485 (Adjustment of Status)</option>
+                                            <option value="I-765 (Employment Authorization)">I-765 (Employment Authorization)</option>
+                                            <option value="I-90 (Application to Replace Permanent Resident Card)">I-90 (Application to Replace Permanent Resident Card)</option>
+                                            <option value="I-129 (Petition for a Nonimmigrant Worker)">I-129 (Petition for a Nonimmigrant Worker)</option>
+                                            <option value="I-129F (Petition for Alien Fiancé(e))">I-129F (Petition for Alien Fiancé(e))</option>
+                                            <option value="I-131 (Application for Travel Document)">I-131 (Application for Travel Document)</option>
+                                            <option value="I-539 (Application to Extend/Change Nonimmigrant Status)">I-539 (Application to Extend/Change Nonimmigrant Status)</option>
+                                            <option value="I-751 (Petition to Remove Conditions on Residence)">I-751 (Petition to Remove Conditions on Residence)</option>
+                                            <option value="N-400 (Application for Naturalization)">N-400 (Application for Naturalization)</option>
+                                            <option value="K-1 (Fiancé(e) Visa)">K-1 (Fiancé(e) Visa)</option>
+                                            <option value="B-1/B-2 (Visitor Visa)">B-1/B-2 (Visitor Visa)</option>
+                                            <option value="Other">Other</option>
+                                        </select>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Number</label>

@@ -64,6 +64,13 @@ export const trackerApi = {
         return res.json();
     },
 
+    deleteTravelEntry: async (id: number): Promise<void> => {
+        const res = await fetch(`${TRACKER_API_BASE}/history/travel/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete travel entry');
+    },
+
     // ... we assume employment and residence are here ...
     getEmploymentHistory: async (): Promise<EmploymentEntry[]> => {
         const res = await fetch(`${TRACKER_API_BASE}/history/employment`);
@@ -81,6 +88,13 @@ export const trackerApi = {
         return res.json();
     },
 
+    deleteEmploymentEntry: async (id: number): Promise<void> => {
+        const res = await fetch(`${TRACKER_API_BASE}/history/employment/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete employment entry');
+    },
+
     getResidenceHistory: async (): Promise<ResidenceEntry[]> => {
         const res = await fetch(`${TRACKER_API_BASE}/history/residence`);
         if (!res.ok) throw new Error('Failed to fetch residence history');
@@ -95,6 +109,13 @@ export const trackerApi = {
         });
         if (!res.ok) throw new Error('Failed to add residence entry');
         return res.json();
+    },
+
+    deleteResidenceEntry: async (id: number): Promise<void> => {
+        const res = await fetch(`${TRACKER_API_BASE}/history/residence/${id}`, {
+            method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Failed to delete residence entry');
     },
 
     // Documents
@@ -212,6 +233,14 @@ export const trackerApi = {
             const err = await res.json();
             throw new Error(err.detail || 'Failed to check status');
         }
+        return res.json();
+    },
+
+    seedDemoData: async (): Promise<{ case_id: number }> => {
+        const res = await fetch(`${TRACKER_API_BASE}/demo/seed`, {
+            method: 'POST',
+        });
+        if (!res.ok) throw new Error('Failed to seed demo data');
         return res.json();
     },
 

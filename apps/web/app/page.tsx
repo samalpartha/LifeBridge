@@ -23,8 +23,16 @@ function MyCasesList() {
   async function loadCases() {
     try {
       const data = await trackerApi.getCases();
-      // Sort by newest first (assuming higher ID is newer for now, or just reverse)
-      setCases(data.slice().reverse().slice(0, 3));
+      // Sort: User cases first, then newest
+      const sorted = data.sort((a, b) => {
+        const isDemoA = a.title.startsWith("Demo:");
+        const isDemoB = b.title.startsWith("Demo:");
+        if (isDemoA && !isDemoB) return 1;
+        if (!isDemoA && isDemoB) return -1;
+        // If both same type, sort by ID descending (newest first)
+        return (b.id || 0) - (a.id || 0);
+      });
+      setCases(sorted.slice(0, 3));
     } catch (e) {
       console.error(e);
       toast.error("Failed to load cases");
@@ -103,9 +111,15 @@ function MyCasesList() {
             <h3 className="font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors truncate">
               {c.title || "Untitled Case"}
             </h3>
-            <p className="text-xs text-gray-500 mb-4 line-clamp-2 flex-grow">
+            <p className="text-xs text-gray-500 mb-3 flex-grow">
               {c.case_type} • {c.receipt_number || "No Receipt #"}
             </p>
+
+            {/* Next Action Placeholder */}
+            <div className="mb-4 bg-blue-50 border border-blue-100 rounded px-3 py-2 text-xs">
+              <span className="font-semibold text-blue-800 uppercase tracking-wider block mb-0.5" style={{ fontSize: '0.65rem' }}>Next Step:</span>
+              <span className="text-gray-700">Complete checklist</span>
+            </div>
             <div className="flex justify-between items-center text-xs pt-3 border-t border-gray-100 mt-auto">
               <span className="text-gray-400">Updated today</span>
               {/* Delete disabled until API supported */}
@@ -189,7 +203,19 @@ export default function Home() {
   // Demo disabled for now as trackerApi doesn't support specific demo preset endpoint yet
   // We could implement it by manually creating a case and items sequence
   async function onDemo() {
-    toast.success("Demo mode coming soon with new backend!");
+    setBusy(true);
+    const toastId = toast.loading("Setting up demo case...");
+    try {
+      const res = await trackerApi.seedDemoData();
+      toast.dismiss(toastId);
+      toast.success("Demo case ready!");
+      router.push(`/tracker/cases/${res.case_id}`);
+    } catch (e) {
+      toast.dismiss(toastId);
+      toast.error("Failed to setup demo case");
+      console.error(e);
+      setBusy(false);
+    }
   }
 
   const scenarios = [
@@ -217,21 +243,22 @@ export default function Home() {
     <div className="max-w-5xl mx-auto space-y-12 pb-12">
 
       {/* 1. Hero / Primary CTA */}
+      {/* 1. Hero / Primary CTA */}
       <section className="text-center py-12 animate-fade-in bg-white rounded-2xl shadow-sm border border-gray-100 p-10 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
         <h1 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">
-          How can we help you today?
+          Welcome to your Action Center
         </h1>
         <p className="text-lg text-gray-500 mb-8 max-w-xl mx-auto">
-          LifeBridge helps you organize evidence and build a strong immigration case.
+          Track your progress, manage evidence, and move your immigration journey forward.
         </p>
 
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <a href="#create" className="btn btn-primary text-lg px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+        <div className="flex flex-col items-center gap-4">
+          <a href="#create" className="btn btn-primary text-lg px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all w-full sm:w-auto">
             👉 Start a New Immigration Case
           </a>
-          <button onClick={onDemo} className="px-6 py-3 text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg font-medium transition-colors">
-            Try Demo Case
+          <button onClick={onDemo} className="text-sm text-gray-400 hover:text-blue-600 font-medium transition-colors hover:underline">
+            or try a demo case to explore features
           </button>
         </div>
       </section>

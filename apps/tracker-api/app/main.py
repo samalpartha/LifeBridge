@@ -62,6 +62,15 @@ def add_travel(entry: TravelEntry, db: Session = Depends(get_db)):
 def get_travel(db: Session = Depends(get_db)):
     return db.query(TravelHistory).filter(TravelHistory.user_id == "mock_user_123").all()
 
+@app.delete("/v1/history/travel/{entry_id}")
+def delete_travel(entry_id: int, db: Session = Depends(get_db)):
+    db_entry = db.query(TravelHistory).filter(TravelHistory.id == entry_id, TravelHistory.user_id == "mock_user_123").first()
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(db_entry)
+    db.commit()
+    return {"message": "Entry deleted"}
+
 class EmploymentEntry(BaseModel):
     employer: str
     title: str
@@ -90,6 +99,15 @@ def add_employment(entry: EmploymentEntry, db: Session = Depends(get_db)):
 def get_employment(db: Session = Depends(get_db)):
     return db.query(EmploymentHistory).filter(EmploymentHistory.user_id == "mock_user_123").all()
 
+@app.delete("/v1/history/employment/{entry_id}")
+def delete_employment(entry_id: int, db: Session = Depends(get_db)):
+    db_entry = db.query(EmploymentHistory).filter(EmploymentHistory.id == entry_id, EmploymentHistory.user_id == "mock_user_123").first()
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(db_entry)
+    db.commit()
+    return {"message": "Entry deleted"}
+
 # History: Residence
 @app.post("/v1/history/residence")
 def add_residence(entry: ResidenceEntry, db: Session = Depends(get_db)):
@@ -102,6 +120,15 @@ def add_residence(entry: ResidenceEntry, db: Session = Depends(get_db)):
 @app.get("/v1/history/residence")
 def get_residence(db: Session = Depends(get_db)):
     return db.query(ResidenceHistory).filter(ResidenceHistory.user_id == "mock_user_123").all()
+
+@app.delete("/v1/history/residence/{entry_id}")
+def delete_residence(entry_id: int, db: Session = Depends(get_db)):
+    db_entry = db.query(ResidenceHistory).filter(ResidenceHistory.id == entry_id, ResidenceHistory.user_id == "mock_user_123").first()
+    if not db_entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    db.delete(db_entry)
+    db.commit()
+    return {"message": "Entry deleted"}
 
 # --- Documents ---
 class DocumentEntry(BaseModel):
@@ -369,3 +396,86 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
         "uscis_status": result
     }
 
+
+# --- Demo ---
+@app.post("/v1/demo/seed")
+def seed_demo_data(db: Session = Depends(get_db)):
+    # 1. Create a Demo Case
+    demo_case = ImmigrationCase(
+        user_id="mock_user_123",
+        title="Demo: Spouse Visa Application",
+        case_type="I-130 (Petition for Alien Relative)",
+        status="Open",
+        filing_date=date.today(),
+        receipt_number="IOE0987654321"
+    )
+    db.add(demo_case)
+    db.commit()
+    db.refresh(demo_case)
+    
+    # 2. Add Tasks
+    tasks = [
+        Task(
+            user_id="mock_user_123",
+            title="Gather Marriage Certificate",
+            description="Locate original copy of marriage certificate for I-130 evidence.",
+            status="pending",
+            priority="high",
+            created_at=date.today(),
+            case_id=demo_case.id
+        ),
+        Task(
+            user_id="mock_user_123",
+            title="Passport Photos",
+            description="Get 2x2 passport-style photos for beneficiary.",
+            status="in_progress",
+            priority="medium",
+            created_at=date.today(),
+            case_id=demo_case.id
+        ),
+        Task(
+            user_id="mock_user_123",
+            title="Complete Form I-130A",
+            description="Supplemental Information for Spouse Beneficiary.",
+            status="pending",
+            priority="medium",
+            created_at=date.today(),
+            case_id=demo_case.id
+        )
+    ]
+    db.add_all(tasks)
+    
+    # 3. Add Note
+    note = Note(
+        user_id="mock_user_123",
+        title="Consultation Notes",
+        content="Attorney mentioned focusing on bona fide marriage evidence. Need joint lease and bank statements.",
+        note_date=date.today(),
+        linked_entity_id=str(demo_case.id)
+    )
+    db.add(note)
+    
+    # 4. Add Document (Placeholder)
+    doc = Document(
+        user_id="mock_user_123",
+        filename="sample_marriage_cert.pdf",
+        category="Evidence",
+        s3_key="demo/sample_marriage_cert.pdf",
+        upload_date=date.today(),
+        case_id=demo_case.id
+    )
+    db.add(doc)
+    
+    # 5. Add Timeline Event
+    event = CaseEvent(
+        case_id=demo_case.id,
+        event_date=date.today(),
+        title="Case Started",
+        description="Initialized new I-130 petition for spouse.",
+        event_type="milestone"
+    )
+    db.add(event)
+    
+    db.commit()
+    
+    return {"message": "Demo data seeded", "case_id": demo_case.id}

@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 
 interface Attorney {
-    id: number;
+    id: string;
     name: string;
     firm?: string;
     practice_area?: string;

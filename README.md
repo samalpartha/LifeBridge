@@ -1,167 +1,134 @@
-# LifeBridge
+# LifeBridge 🌉
+### *Bridging Borders with Artificial Intelligence*
 
-LifeBridge is an end-to-end, open-source prototype that helps people navigate cross-border mobility. It turns documents and a short intake into a clear checklist, timeline, and risk register, with evidence-linked citations.
+**Submission for the VisaVerse AI Hackathon**
 
-## What this build includes
+LifeBridge is an end-to-end, AI-powered platform designed to make global mobility accessible, transparent, and manageable. By leveraging Generative AI (Google Gemini), we transform complex immigration bureaucracies into clear, actionable pathways, removing the barriers that limit human opportunity.
 
-- A web app (Next.js) that guides the user through intake, upload, and results.
-- A Python API (FastAPI) that runs OCR, extraction, and reasoning.
-- A Postgres database for cases, documents, chunks, decisions, risks, and timeline items.
-- S3-compatible object storage for uploaded files (local MinIO in development).
-- A demo preset called "Family Reunion" to make judging fast.
-- **New**: Voice Support (listen to plans).
-- **New**: Location Intelligence (Find Embassies on Map).
-- **New**: Multi-language Support (English/Spanish toggle).
+---
 
-## Target Audience
+## 🚀 Project Overview
 
-LifeBridge is built for anyone navigating complex immigration bureaucracies:
+### The Problem
+Moving across borders is one of the most stressful and complex human experiences.
+*   **Information Asymmetry**: Immigration laws are complex, changing, and buried in legalese.
+*   **Fragmented Systems**: Applicants juggle disparate checklists, government portals, and physical documents.
+*   **High Barriers**: Legal assistance is often prohibitively expensive, leaving millions to navigate the system alone.
 
-- **Students**: Managing F-1 visas, OPT applications, and university admissions.
-- **Professionals**: Tracking H-1B, O-1, or Green Card timelines and employer documents.
-- **Global Citizens**: Digital nomads and travelers organizing visas and travel history.
-- **Families**: Coordinating marriage-based adjustments or sponsoring relatives.
+### The Solution
+LifeBridge acts as an **AI Co-pilot for Global Mobility**. It unifies the entire journey—from initial discovery to final approval—into a single, intelligent workspace.
+*   **Understand**: AI analyzes user intent and documents to generate tailored checklists.
+*   **Manage**: A "Case Spine" tracks every deadline, document, and task.
+*   **Connect**: Location intelligence and effective AI search connect users to real-world support (Embassies & Attorneys).
 
-## User Journeys
+---
 
-The application supports three core workflows:
+## 🧠 How We Use AI (Meaningful Innovation)
 
-1.  **Discovery**: Users start with the **Checklist** wizard to identify their specific path and requirements.
-2.  **Management**: Users convert checklist steps into **Tasks**, track their **Case Status**, and maintain a digital **Vault** of verified documents.
-3.  **Support**: Users can locate embassies via the **Map** or connect with verified **Attorneys** for legal assistance.
+We don't just "wrap" an LLM; we use AI to perform specialized cognitive tasks that were previously manual bottlenecks:
 
-## Architecture
+1.  **Intelligent Document Analysis ("The Clerk")**:
+    *   **OCR & extraction** digitize physical documents.
+    *   **Reasoning Agents** analyze documents for validity, expiration risks, and inconsistencies (e.g., "Passport expires before visa duration").
 
-The system follows a modern microservices-inspired architecture, separating core document processing from case management to ensure modularity and scalability.
+2.  **Generative Reasoning ("The Guide")**:
+    *   LifeBridge uses **Google Gemini** to synthesize complex government requirements into simple, step-by-step plans tailored to the user's specific background.
+
+3.  **AI-Powered Directory ("The Network")**:
+    *   Unlike static directories, our **Attorney Search** uses AI to interpret natural language queries (e.g., "Spanish speaking lawyer for H1B in Miami") and aggregates scattered public contact info into actionable "Contact Cards".
+
+---
+
+## ⚡ Key Features
+
+*   **🔍 Smart Intake & Checklist**: Converts a simple interview into a rigorous, evidence-linked project plan.
+*   **📂 Digital Vault**: Secure storage that "reads" your files, tagging them automatically.
+*   **🛡️ Risk Register**: Proactive warnings about gaps in your application before you file.
+*   **🗺️ Location Intelligence**: Instant mapping of nearby Embassies and Consulates.
+*   **🗣️ Voice & Multi-language**: Accessible design with text-to-speech and English/Spanish support for inclusive access.
+*   **🤝 Collaborative Tracker**: A "TurboTax-like" experience for managing travel history, employment records, and tasks.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+LifeBridge adheres to a modern, scalable microservices architecture.
+
+### **Frontend**
+*   **Next.js 14 (App Router)**: Fast, server-rendered React application.
+*   **Tailwind CSS & Framer Motion**: Responsive, accessible, and "wow"-factor design.
+*   **Lucide React**: Consistent, high-quality iconography.
+
+### **Backend & AI**
+*   **FastAPI (Python)**: High-performance API layer.
+*   **Google Gemini (via Vertex AI/Studio)**: The core reasoning engine.
+*   **LangChain**: Orchestrating document splitting and context management.
+*   **OCR Tools**: PyTesseract & PDFPlumber for ingestion.
+
+### **Data & Infrastructure**
+*   **PostgreSQL**: Relational storage for structured case data.
+*   **MinIO (S3 Compatible)**: Object storage for document artifacts.
+*   **Docker Compose**: Fully containerized local development environment.
 
 ```mermaid
 graph TD
     User["User (Browser)"]
     
-    subgraph "Frontend Layer"
-        NextJS["Next.js Web App<br/>(App Router)"]
+    subgraph "Frontend"
+        NextJS["Next.js Web App"]
     end
     
-    subgraph "Application Layer"
-        CoreAPI["Core API<br/>(AI & Processing)"]
-        TrackerAPI["Tracker API<br/>(Case Management)"]
+    subgraph "Intelligent Core"
+        CoreAPI["Core API (AI Agents)"]
+        TrackerAPI["Tracker API (Case Logic)"]
+        Gemini["Google Gemini Models"]
     end
     
-    subgraph "Data Persistence Layer"
-        CoreDB[("Core DB<br/>Postgres")]
-        TrackerDB[("Tracker DB<br/>Postgres")]
-        ObjectStore[("MinIO<br/>S3 Object Storage")]
+    subgraph "Persistence"
+        DB[("PostgreSQL")]
+        S3[("MinIO Object Storage")]
     end
 
-    User -->|HTTPS| NextJS
-    NextJS -->|REST / Analysis| CoreAPI
-    NextJS -->|REST / CRUD| TrackerAPI
+    User -->|Interaction| NextJS
+    NextJS -->|Process Docs| CoreAPI
+    NextJS -->|Manage Case| TrackerAPI
     
-    CoreAPI -->|Metadata & Risks| CoreDB
-    CoreAPI -->|Raw & Processed Files| ObjectStore
+    CoreAPI -->|Reasoning| Gemini
+    TrackerAPI -->|Search/Extract| Gemini
     
-    TrackerAPI -->|Case Data & History| TrackerDB
-    TrackerAPI -->|Linked Documents| ObjectStore
+    CoreAPI & TrackerAPI -->|Store Data| DB
+    CoreAPI & TrackerAPI -->|Store Files| S3
 ```
 
-## Tech Stack Overview
+---
 
-LifeBridge is built with a robust, type-safe, and scalable stack designed for reliability and developer experience.
+## 🎥 Demo & Setup
 
-### 🎨 Frontend (Web)
-*   **Framework**: [Next.js 14](https://nextjs.org/) (App Router, Server Components)
-*   **Language**: TypeScript
-*   **Styling**: Tailwind CSS
-*   **Icons**: Lucide React
-*   **State/Data**: React Hooks, SWR (stale-while-revalidate)
-*   **Animations**: Framer Motion (for smooth interactions)
+### [Link to Demo Video (YouTube/Loom)]
+*(Please insert your 2-5 min video link here)*
 
-### 🧠 Backend Services
-*   **Core API (Python)**:
-    *   **Framework**: FastAPI
-    *   **OCR**: PyTesseract / PDFPlumber
-    *   **Processing**: LangChain (for text splitting/chunking)
-    *   **Validation**: Pydantic
-*   **Tracker API (Python)**:
-    *   **Framework**: FastAPI
-    *   **ORM**: SQLAlchemy
-    *   **Schema**: Pydantic
+### Quickstart Guide
 
-### 💾 Data & Infrastructure
-*   **Databases**: PostgreSQL 16 (Relational Data)
-*   **Storage**: MinIO (Local S3-compatible Object Storage)
-*   **Containerization**: Docker & Docker Compose
-*   **Routing**: Nginx (optional/production)
+1.  **Prerequisites**: Docker & Docker Compose, Google API Key.
+2.  **Clone**: `git clone <repo-url>`
+3.  **Configure**: Create `.env` with your `GOOGLE_API_KEY`.
+4.  **Run**:
+    ```bash
+    docker compose up --build
+    ```
+5.  **Access**:
+    *   App: `http://localhost:3000`
+    *   Docs: `http://localhost:8000/docs`
 
-## Key Features & Details
+---
 
-### 1. Intelligent Document Processing
-LifeBridge doesn't just store files; it "reads" them.
-*   **OCR & Extraction**: Automatically extracts text from scanned PDFs and images.
-*   **Chunking & Indexing**: Breaks down complex legal documents into manageable chunks for analysis.
-*   **Risk Detection**: Identifies potential red flags (e.g., missing dates, inconsistent names) based on deterministic rules.
+## 👥 Team Information
 
-### 2. Comprehensive Case Management
-A dedicated "Tracker" module acts as the system of record for the user's immigration journey.
-*   **Case Spine**: Centralizes all events, documents, and tasks under a specific Case ID (e.g., "Spouse Visa").
-*   **Timeline View**: Visualizes the entire history of a case, from filing to decision.
-*   **Linked Artifacts**: Uploaded documents are strictly linked to specific cases for organized retrieval.
+*   **Partha Samal** - Developer - *psama0214@gmail.com*
+*   *[Add Team Member Name]* - *[Role]* - *[Email]*
 
-### 3. Accessible User Experience
-*   **Voice Support**: Integrated auditory playback for case summaries and plans, making the app accessible to users with visual impairments or reading difficulties.
-*   **Interactive Maps**: Direct integration with mapping services to help users locate nearby Embassies and Consulates.
-*   **Multi-language Support**: Seamless toggle between English and Spanish to support diverse user bases.
-
-## Quickstart
-
-### 1) Prerequisites
-
-- Docker and Docker Compose installed
-- Ports 3000, 8000, 3100, 5432, 5433, 9000, 9001 available
-
-### 2) Start the Application
-
-From repo root:
-
-```bash
-docker compose up --build
-```
-
-Wait 30-60 seconds for all services to initialize.
-
-### 3) Access the Application
-
-- **Web UI**: http://localhost:3000
-- **Core API docs**: http://localhost:8000/docs
-- **Tracker API docs**: http://localhost:3100/docs
-- **MinIO Console**: http://localhost:9001 (login: minio / minio12345)
-
-### 4) Try the Demo
-
-1. Open http://localhost:3000
-2. Click **"Run demo preset"**
-3. View the generated checklist, timeline, and risks
-4. Click **"Why"** on any item to see evidence
-
-### 5) Stop the Application
-
-```bash
-docker compose down
-```
-
-## Environment variables
-
-For local dev via docker-compose, defaults are provided in the `docker-compose.yml`.
-
-## Repo structure
-
-- `apps/web`: Next.js frontend application
-- `apps/api`: Core Python/FastAPI service (Document Analysis)
-- `apps/tracker-api`: Tracker Python/FastAPI service (Case Management)
-- `apps/docgen`: Document generation service
-- `data`: Local volume data for Postgres and MinIO
-- `docs`: Documentation and architecture notes
+---
 
 ## License
 
-MIT. See `LICENSE`.
+MIT License. Open exploration for a borderless world.

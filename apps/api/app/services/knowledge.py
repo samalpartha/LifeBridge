@@ -55,8 +55,18 @@ class KnowledgeService:
 
     async def get_content(self, topic_id: str) -> Optional[KnowledgeContent]:
         topic = next((t for t in self.TOPICS if t["id"] == topic_id), None)
+        
+        # Dynamic Topic Fallback
         if not topic:
-            return None
+            # Assume it's a t3nsor file we haven't explicitly whitelisted
+            # This handles links like [Adjusting Status](adjusting-status.md) which maps to topic_id="adjusting-status"
+            topic = {
+                "id": topic_id,
+                "source": "t3nsor",
+                "file": f"{topic_id}.md",
+                "title": topic_id.replace("-", " ").title(), # Fallback title
+                "description": "Dynamic topic"
+            }
 
         # Check cache
         cached = self._content_cache.get(topic_id)
@@ -77,6 +87,38 @@ class KnowledgeService:
                 content_url = f"{source_config['base_url']}/{topic['file']}"
                 logger.info("fetching_knowledge_content", url=content_url)
                 resp = await client.get(content_url)
+                
+                # FALLBACK: If 404, try web search
+                if resp.status_code == 404:
+                    logger.info("topic_not_found_searching_web", topic=topic["title"])
+                    try:
+                        from duckduckgo_search import DDGS
+                        
+                        search_query = f"US immigration {topic['title']} guide"
+                        results = list(DDGS().text(search_query, max_results=5))
+                        
+                        md_content = f"# {topic['title']}\n\n"
+                        md_content += "> **Note:** This topic was not found in our curated library, so we searched the web for you.\n\n"
+                        
+                        if results:
+                            for res in results:
+                                md_content += f"### [{res['title']}]({res['href']})\n"
+                                md_content += f"{res['body']}\n\n"
+                        else:
+                            md_content += "No search results found. Please try a different topic."
+                            
+                        return KnowledgeContent(
+                            topic_id=topic_id,
+                            title=topic["title"],
+                            content=md_content,
+                            last_updated=None,
+                            commit_sha=None
+                        )
+                    except Exception as search_err:
+                        logger.error("web_search_failed", error=str(search_err))
+                        # Fall through to standard error handling
+                        pass
+
                 resp.raise_for_status()
                 content = resp.text
 

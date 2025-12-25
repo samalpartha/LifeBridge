@@ -13,6 +13,13 @@ class USCISService:
         if not receipt_number:
             return {"status": "Error", "detail": "No receipt number provided"}
 
+        # MOCK FOR DEMO
+        if receipt_number == "IOE0987654321":
+            return {
+                "status": "Case Was Received And A Receipt Notice Was Sent",
+                "detail": "On December 25, 2025, we received your Form I-130, Petition for Alien Relative, Receipt Number IOE0987654321, and sent you the receipt notice that describes how we will process your case. Please follow the instructions in the notice. If you do not receive your receipt notice by January 24, 2026, contact the USCIS Contact Center at www.uscis.gov/contactcenter. If you move, go to www.uscis.gov/addresschange to give us your new mailing address."
+            }
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Content-Type": "application/x-www-form-urlencoded"

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import rehypeRaw from "rehype-raw";
-import { ArrowLeft, GitCommit, Calendar, ExternalLink, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Calendar, ExternalLink, AlertTriangle } from "lucide-react";
 import { knowledgeApi, KnowledgeContent } from "../../../features/knowledge/api/client";
 
 export default function KnowledgeDetailPage() {
@@ -68,7 +68,34 @@ export default function KnowledgeDetailPage() {
                         <ReactMarkdown
                             rehypePlugins={[rehypeRaw]}
                             components={{
-                                a: ({ node, ...props }) => <a {...props} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" />,
+                                a: ({ node, ...props }) => {
+                                    let href = props.href || "";
+                                    const isExternal = href.startsWith("http") || href.startsWith("//");
+
+                                    if (isExternal) {
+                                        return <a {...props} className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" />;
+                                    }
+
+                                    // Handle scroll-to-anchor links
+                                    if (href.startsWith("#")) {
+                                        return <a {...props} className="text-blue-600 hover:underline" />;
+                                    }
+
+                                    // Clean up markdown links
+                                    if (href.endsWith(".md")) {
+                                        href = href.replace(".md", "");
+                                    }
+
+                                    // Map specific files to IDs
+                                    if (href === "README" || href.endsWith("/README")) {
+                                        href = "/knowledge/checklist";
+                                    } else if (!href.startsWith("/")) {
+                                        // Assume it's a sibling topic
+                                        href = `/knowledge/${href}`;
+                                    }
+
+                                    return <Link href={href} className="text-blue-600 hover:underline">{props.children}</Link>;
+                                },
                                 h1: ({ node, ...props }) => <h1 {...props} className="text-3xl font-bold mb-6 pb-2 border-b border-gray-100" />,
                                 h2: ({ node, ...props }) => <h2 {...props} className="text-2xl font-bold mt-8 mb-4" />,
                                 h3: ({ node, ...props }) => <h3 {...props} className="text-xl font-bold mt-6 mb-3" />,
@@ -91,21 +118,8 @@ export default function KnowledgeDetailPage() {
                                     <span>Updated: {new Date(content.last_updated).toLocaleDateString()}</span>
                                 </div>
                             )}
-                            {content.commit_sha && (
-                                <div className="flex items-center gap-2">
-                                    <GitCommit size={16} className="text-gray-400" />
-                                    <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">
-                                        {content.commit_sha.substring(0, 7)}
-                                    </span>
-                                </div>
-                            )}
                         </div>
 
-                        <hr className="my-4 border-gray-100" />
-
-                        <p className="text-xs text-gray-500">
-                            Sourced from the <a href="https://github.com/t3nsor/us-immigration-faq" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">US Immigration FAQ</a> repository.
-                        </p>
                     </div>
                 </div>
             </div>
