@@ -375,13 +375,33 @@ async def check_case_status(case_id: int, db: Session = Depends(get_db)):
     # If it's a demo number, return result IMMEDIATELY
     if receipt in mock_data:
         result = mock_data[receipt]
-        # Background task: Update DB status silently
+        # Update DB in background
         if db_case:
             try:
                 db_case.status = result["status"]
+                
+                # Check for existing event today to avoid duplicates
+                existing = db.query(CaseEvent).filter(
+                    CaseEvent.case_id == case_id, 
+                    CaseEvent.title == result["status"],
+                    CaseEvent.event_date == date.today()
+                ).first()
+                
+                if not existing:
+                    new_event = CaseEvent(
+                        case_id=case_id,
+                        event_date=date.today(),
+                        title=result["status"],
+                        description=result["detail"],
+                        event_type="status_update"
+                    )
+                    db.add(new_event)
+                
                 db.commit()
-            except:
-                pass 
+            except Exception as e:
+                print(f"DEBUG: Mock DB update error (ignored): {e}")
+                db.rollback()
+        
         return { "case_id": case_id, "receipt": receipt, "uscis_status": result }
 
     # 3. Regular Scraper Flow (Only if not a demo number)
