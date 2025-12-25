@@ -10,7 +10,7 @@ class Base(DeclarativeBase):
 
 
 class Case(Base):
-    __tablename__ = "cases"
+    __tablename__ = "api_cases"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
@@ -27,10 +27,10 @@ class Case(Base):
 
 
 class Document(Base):
-    __tablename__ = "documents"
+    __tablename__ = "api_documents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_cases.id"), index=True)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime, default=dt.datetime.utcnow)
 
     filename: Mapped[str] = mapped_column(String(255))
@@ -42,11 +42,11 @@ class Document(Base):
 
 
 class Chunk(Base):
-    __tablename__ = "chunks"
+    __tablename__ = "api_chunks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
-    document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id"), index=True)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_cases.id"), index=True)
+    document_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_documents.id"), index=True)
 
     idx: Mapped[int] = mapped_column(Integer)
     text: Mapped[str] = mapped_column(Text)
@@ -56,10 +56,10 @@ class Chunk(Base):
 
 
 class Risk(Base):
-    __tablename__ = "risks"
+    __tablename__ = "api_risks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_cases.id"), index=True)
 
     category: Mapped[str] = mapped_column(String(64))
     severity: Mapped[str] = mapped_column(String(16))
@@ -71,10 +71,10 @@ class Risk(Base):
 
 
 class TimelineItem(Base):
-    __tablename__ = "timeline_items"
+    __tablename__ = "api_timeline_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_cases.id"), index=True)
 
     label: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(24), default="todo")
@@ -87,10 +87,10 @@ class TimelineItem(Base):
 
 
 class ChecklistItem(Base):
-    __tablename__ = "checklist_items"
+    __tablename__ = "api_checklist_items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("cases.id"), index=True)
+    case_id: Mapped[str] = mapped_column(String(36), ForeignKey("api_cases.id"), index=True)
 
     label: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(24), default="todo")
