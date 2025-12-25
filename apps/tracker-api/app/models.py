@@ -3,7 +3,18 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 
+import sys
+
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    print("CRITICAL ERROR: DATABASE_URL environment variable is MISSING!", file=sys.stderr)
+    print(f"Available Environment Variables: {list(os.environ.keys())}", file=sys.stderr)
+    # Check for common alternatives
+    if os.getenv("POSTGRES_URL"):
+        print("Found POSTGRES_URL instead. Using that.", file=sys.stderr)
+        DATABASE_URL = os.getenv("POSTGRES_URL")
+
 
 # Fix for Render/Supabase: Force psycopg 3 driver
 if DATABASE_URL and DATABASE_URL.startswith("postgresql://"):
