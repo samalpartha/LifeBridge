@@ -4,7 +4,6 @@
 
 [![Status](https://img.shields.io/badge/Status-Live-green?style=for-the-badge)](https://life-bridge-peach.vercel.app/) [![AI](https://img.shields.io/badge/AI-Gemini%20Pro-blue?style=for-the-badge)](https://deepmind.google/technologies/gemini/) [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
 
-**Submission for the VisaVerse AI Hackathon**
 
 LifeBridge is an end-to-end, AI-powered platform designed to make global mobility accessible, transparent, and manageable. By leveraging Generative AI (Google Gemini), we transform complex immigration bureaucracies into clear, actionable pathways, removing the barriers that limit human opportunity.
 
