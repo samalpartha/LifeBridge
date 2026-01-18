@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Search, MapPin, Phone, Mail, Globe, Star, Gavel, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useLanguage } from "../contexts/LanguageContext";
 
 // Dynamically import Map to avoid SSR issues
 const AttorneyMap = dynamic(() => import("../components/AttorneyMap"), {
     ssr: false,
-    loading: () => <div className="h-full w-full bg-gray-100 animate-pulse rounded-xl flex items-center justify-center text-gray-400">Loading Map...</div>
+    loading: () => { const { t } = useLanguage(); return <div className="h-full w-full bg-gray-100 animate-pulse rounded-xl flex items-center justify-center text-gray-400">{t("attorneys.loadingMap")}</div>; }
 });
 
 interface Attorney {
@@ -55,6 +56,7 @@ async function fetchZipLocation(zip: string): Promise<ZipLocation | null> {
 }
 
 export default function AttorneysPage() {
+    const { t } = useLanguage();
     const [searchQuery, setSearchQuery] = useState("");
     const [zipcode, setZipcode] = useState("");
     const [attorneys, setAttorneys] = useState<Attorney[]>([]);
@@ -133,7 +135,7 @@ export default function AttorneysPage() {
                         <span>LegalConnect</span>
                     </div>
                     <div className="text-sm text-gray-500">
-                        Verified Professional Directory
+                        {t("attorneys.verified")}
                     </div>
                 </div>
             </div>
@@ -144,17 +146,17 @@ export default function AttorneysPage() {
 
                     {/* Search Box */}
                     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
-                        <h1 className="text-2xl font-bold text-gray-900">Find an Attorney</h1>
-                        <p className="text-gray-500 text-sm">Use AI to find verified immigration experts near you.</p>
+                        <h1 className="text-2xl font-bold text-gray-900">{t("attorneys.title")}</h1>
+                        <p className="text-gray-500 text-sm">{t("attorneys.subtitle")}</p>
 
                         <div className="space-y-3">
                             <div>
-                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Location</label>
+                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">{t("attorneys.location")}</label>
                                 <div className="relative">
                                     <MapPin className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="Enter ZIP Code (e.g. 10001)"
+                                        placeholder={t("attorneys.zipPlaceholder")}
                                         className="w-full pl-10 h-11 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                         value={zipcode}
                                         onChange={(e) => setZipcode(e.target.value)}
@@ -163,12 +165,12 @@ export default function AttorneysPage() {
                             </div>
 
                             <div>
-                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">Name or Firm (Optional)</label>
+                                <label className="text-xs font-semibold text-gray-700 uppercase mb-1 block">{t("attorneys.nameOrFirm")}</label>
                                 <div className="relative">
                                     <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
-                                        placeholder="e.g. 'Smith Law' or 'John Doe'"
+                                        placeholder={t("attorneys.searchPlaceholder")}
                                         className="w-full pl-10 h-11 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -181,7 +183,7 @@ export default function AttorneysPage() {
                                 disabled={loading || (!zipcode && !searchQuery)}
                                 className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? "Searching..." : "Search Attorneys"}
+                                {loading ? t("attorneys.searching") : t("attorneys.searchButton")}
                             </button>
                         </div>
                     </div>
@@ -191,7 +193,7 @@ export default function AttorneysPage() {
                         {attorneys.length === 0 && !loading && (
                             <div className="text-center py-12 text-gray-400">
                                 <Search className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                                <p>Enter a ZIP code or Name to start searching</p>
+                                <p>{t("attorneys.noResults")}</p>
                             </div>
                         )}
 
@@ -219,10 +221,10 @@ export default function AttorneysPage() {
                                                 <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
                                                 {attorney.rating.toFixed(1)}
                                             </div>
-                                            <span className="text-xs text-gray-400">{attorney.reviews} reviews</span>
+                                            <span className="text-xs text-gray-400">{attorney.reviews} {t("attorneys.reviews")}</span>
                                             {attorney.confidence_score && (
                                                 <span className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100">
-                                                    {(attorney.confidence_score * 100).toFixed(0)}% Match
+                                                    {(attorney.confidence_score * 100).toFixed(0)}% {t("attorneys.match")}
                                                 </span>
                                             )}
                                         </div>
@@ -242,7 +244,7 @@ export default function AttorneysPage() {
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400 flex-col gap-4">
                             <MapPin className="w-16 h-16 opacity-20" />
-                            <p>Map view will update when you search</p>
+                            <p>{t("attorneys.mapView")}</p>
                         </div>
                     )}
                 </div>
@@ -250,7 +252,7 @@ export default function AttorneysPage() {
 
             {/* Disclaimer */}
             <div className="bg-gray-50 border-t py-4 text-center text-xs text-gray-400">
-                Information sourced from public records and AI generation. Always verify credentials independently.
+                {t("attorneys.disclaimer")}
             </div>
 
             {/* Contact Details Modal */}
@@ -279,7 +281,7 @@ export default function AttorneysPage() {
                                 </p>
 
                                 <div className="space-y-3 pt-4 border-t border-gray-100">
-                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact Information</h4>
+                                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">{t("attorneys.contactInfo")}</h4>
 
                                     <div className="flex items-center gap-3 text-gray-700">
                                         <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -313,7 +315,7 @@ export default function AttorneysPage() {
                                 </div>
 
                                 <button className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-indigo-200 mt-2">
-                                    Contact Now
+                                    {t("attorneys.contactNow")}
                                 </button>
                             </div>
                         </div>

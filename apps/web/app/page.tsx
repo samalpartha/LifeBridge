@@ -15,6 +15,7 @@ function MyCasesList() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [caseToDelete, setCaseToDelete] = useState<number | null>(null);
   const router = useRouter();
+  const { t } = useLanguage();
 
   useEffect(() => {
     loadCases();
@@ -88,8 +89,8 @@ function MyCasesList() {
   return (
     <div className="mb-12">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-900">Active Cases</h2>
-        <button onClick={() => router.push('/tracker/cases')} className="text-sm text-blue-600 hover:underline">View All</button>
+        <h2 className="text-xl font-bold text-gray-900">{t("dashboard.activeCases")}</h2>
+        <button onClick={() => router.push('/tracker/cases')} className="text-sm text-blue-600 hover:underline">{t("dashboard.viewAll")}</button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {cases.map((c) => (
@@ -247,18 +248,18 @@ export default function Home() {
       <section className="text-center py-12 animate-fade-in bg-white rounded-2xl shadow-sm border border-gray-100 p-10 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
         <h1 className="text-4xl font-extrabold text-gray-900 mb-3 tracking-tight">
-          Welcome to your Action Center
+          {t("dashboard.welcome")}
         </h1>
         <p className="text-lg text-gray-500 mb-8 max-w-xl mx-auto">
-          Track your progress, manage evidence, and move your immigration journey forward.
+          {t("dashboard.subtitle")}
         </p>
 
         <div className="flex flex-col items-center gap-4">
           <a href="#create" className="btn btn-primary text-lg px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all w-full sm:w-auto">
-            👉 Start a New Immigration Case
+            👉 {t("dashboard.startNewCase")}
           </a>
           <button onClick={onDemo} className="text-sm text-gray-400 hover:text-blue-600 font-medium transition-colors hover:underline">
-            or try a demo case to explore features
+            {t("dashboard.tryDemo")}
           </button>
         </div>
       </section>
@@ -269,14 +270,14 @@ export default function Home() {
       {/* 3. Create Case Section (Hidden mostly, approachable via ID) */}
       <section id="create" className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t border-gray-200">
         <div className="lg:col-span-1">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Create New Case</h2>
-          <p className="text-gray-500 text-sm mb-6">Select a scenario to get a tailored checklist.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t("dashboard.createNewCase")}</h2>
+          <p className="text-gray-500 text-sm mb-6">{t("dashboard.selectScenario")}</p>
         </div>
 
         <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Case Title</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t("dashboard.caseTitle")}</label>
               <input
                 type="text"
                 value={title}
@@ -306,7 +307,7 @@ export default function Home() {
               disabled={busy || !title.trim()}
               className="w-full btn btn-primary py-3 flex justify-center items-center"
             >
-              {busy ? "Creating Case..." : "Create Case & Start Checklist"}
+              {busy ? t("processing") : t("dashboard.createAndStart")}
             </button>
           </div>
           {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
@@ -316,11 +317,9 @@ export default function Home() {
       {/* Legal Footer */}
       <div className="border-t border-gray-100 pt-8 text-center">
         <p className="text-xs text-gray-400 max-w-2xl mx-auto leading-relaxed">
-          <span className="font-semibold text-gray-500">Legal Disclaimer:</span> LifeBridge is an AI-powered document assistant, not a law firm.
-          Determinations and checklists provided herein are for informational purposes only and do not constitute legal advice.
-          Always consult with a qualified immigration attorney for your specific case.
+          <span className="font-semibold text-gray-500">{t("dashboard.legalDisclaimer")}</span> {t("dashboard.disclaimerText")}
           <br className="mb-2" />
-          <span className="block mt-2">Data stored locally on US servers. SOC2 Compliant (Pending).</span>
+          <span className="block mt-2">{t("dashboard.dataCompliance")}</span>
         </p>
       </div>
 

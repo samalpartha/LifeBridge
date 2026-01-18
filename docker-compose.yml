@@ -70,12 +70,15 @@ services:
       - /app/node_modules
       - /app/.next
     environment:
-      NEXT_PUBLIC_API_BASE: http://localhost:8000
+      NEXT_PUBLIC_API_URL: http://api:8000
+      TRACKER_API_URL: http://tracker-api:3100
+      DOCGEN_API_URL: http://docgen:8000
     command: bash -lc "npm install && npm run dev -- -p 3000"
     ports:
       - "3000:3000"
     depends_on:
       - api
+      - tracker-api
     restart: unless-stopped
 
   tracker-db:

@@ -52,22 +52,22 @@ export function Sidebar() {
     // Grouped Navigation
     const navGroups = [
         {
-            title: "Case Workspace",
+            title: t("sidebar.caseWorkspace"),
             items: [
-                { name: t("sidebar.dashboard") || "Dashboard", href: "/", icon: LayoutDashboard },
-                { name: "My Cases", href: "/tracker/cases", icon: FolderOpen },
-                { name: "Documents", href: "/vault", icon: FileText },
-                { name: "Tasks", href: "/tracker/tasks", icon: Calendar },
-                { name: "Timeline", href: "/tracker/history/travel", icon: History },
+                { name: t("sidebar.dashboard"), href: "/", icon: LayoutDashboard },
+                { name: t("sidebar.myCases"), href: "/tracker/cases", icon: FolderOpen },
+                { name: t("sidebar.documents"), href: "/vault", icon: FileText },
+                { name: t("sidebar.tasks"), href: "/tracker/tasks", icon: Calendar },
+                { name: t("sidebar.timeline"), href: "/tracker/history/travel", icon: History },
             ]
         },
         {
-            title: "Guidance",
+            title: t("sidebar.guidance"),
             items: [
-                { name: "Knowledge Base", href: "/knowledge", icon: BookOpen },
-                { name: t("sidebar.attorneys") || "Find Attorneys", href: "/attorneys", icon: UserGroupIcon },
-                { name: t("sidebar.embassy") || "Embassy Finder", href: "/map", icon: Map },
-                { name: "Help", href: "/help", icon: HelpCircle },
+                { name: t("sidebar.knowledgeBase"), href: "/knowledge", icon: BookOpen },
+                { name: t("sidebar.attorneys"), href: "/attorneys", icon: UserGroupIcon },
+                { name: t("sidebar.embassy"), href: "/map", icon: Map },
+                { name: t("sidebar.help"), href: "/help", icon: HelpCircle },
             ]
         }
     ];
@@ -137,7 +137,7 @@ export function Sidebar() {
                         <p className="text-sm font-medium text-gray-900 truncate">
                             {user?.email?.split('@')[0] || "Guest User"}
                         </p>
-                        <p className="text-xs text-gray-400 truncate">Google Account</p>
+                        <p className="text-xs text-gray-400 truncate">{t("sidebar.googleAccount")}</p>
                     </div>
                 </div>
 
@@ -146,13 +146,13 @@ export function Sidebar() {
                     className="flex items-center gap-2 text-gray-500 hover:text-red-600 px-3 py-2 w-full rounded-lg text-sm transition-colors"
                 >
                     <LogOut size={16} />
-                    Log Out
+                    {t("sidebar.logOut")}
                 </button>
 
                 <div className="px-3 pt-2 border-t border-gray-100">
                     <p className="text-[10px] text-gray-400 leading-tight text-center">
-                        Not a law firm. Information only. <br />
-                        <Link href="/terms" className="underline hover:text-gray-600">Terms</Link> • <Link href="/privacy" className="underline hover:text-gray-600">Privacy</Link>
+                        {t("sidebar.disclaimer")} <br />
+                        <Link href="/terms" className="underline hover:text-gray-600">{t("sidebar.terms")}</Link> • <Link href="/privacy" className="underline hover:text-gray-600">{t("sidebar.privacy")}</Link>
                     </p>
                 </div>
             </div>
