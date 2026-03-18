@@ -1,6 +1,7 @@
-import httpx
 import random
-from typing import List, Optional
+
+import httpx
+
 from ..schemas.attorney import AttorneyOut, AttorneySearchResponse
 from ..utils.logger import get_logger
 
@@ -10,7 +11,7 @@ class AttorneyService:
     ZIP_API = "https://api.zippopotam.us/us/{zip}"
     CL_API = "https://www.courtlistener.com/api/rest/v3/people/"
 
-    async def search(self, zip_code: Optional[str] = None, query: Optional[str] = None) -> AttorneySearchResponse:
+    async def search(self, zip_code: str | None = None, query: str | None = None) -> AttorneySearchResponse:
         async with httpx.AsyncClient() as client:
             location_context = ""
             city = "Unknown City"
@@ -26,18 +27,19 @@ class AttorneyService:
                         city = place.get("place name")
                         state = place.get("state abbreviation")
                         location_context = f"in {city}, {state}"
-                except:
+                except Exception:
                     pass
-            
+
             # If no zip and no query, return empty
             if not zip_code and not query:
                 return AttorneySearchResponse(results=[])
 
             # 2. Use Gemini AI Generation
-            import google.generativeai as genai
-            import os
             import json
-            
+            import os
+
+            import google.generativeai as genai
+
             api_key = os.getenv("GOOGLE_API_KEY")
             results = []
 
@@ -49,10 +51,10 @@ class AttorneyService:
                     genai.configure(api_key=api_key)
                     # Use a model that exists - trying flash-latest as established
                     model = genai.GenerativeModel('gemini-flash-latest')
-                    
+
                     search_term = f"'{query}'" if query else "immigration attorneys"
                     loc = location_context if location_context else "the US"
-                    
+
                     prompt = f"""
                     You are a helpful legal assistant.
                     Generate a JSON list of 5 real or realistic immigration attorneys/firms matching: {search_term} {loc}.
@@ -73,7 +75,7 @@ class AttorneyService:
                     ]
                     Return ONLY raw JSON. No markdown formatting.
                     """
-                    
+
                     logger.info(f"Generating attorneys with Gemini for query='{query}' loc='{location_context}'")
                     response = model.generate_content(prompt)
                     text = response.text.strip()
@@ -81,9 +83,9 @@ class AttorneyService:
                         text = text[7:]
                     if text.endswith("```"):
                         text = text[:-3]
-                        
+
                     ai_data = json.loads(text)
-                    
+
                     for idx, item in enumerate(ai_data):
                         name_candidate = item.get("name", "Unknown Attorney")
                         results.append(AttorneyOut(
@@ -112,12 +114,12 @@ class AttorneyService:
                 results = self._get_fallback_attorneys(city, state)
 
             return AttorneySearchResponse(
-                results=results, 
-                location_city=city, 
+                results=results,
+                location_city=city,
                 location_state=state
             )
 
-    def _get_fallback_attorneys(self, city: str, state: str) -> List[AttorneyOut]:
+    def _get_fallback_attorneys(self, city: str, state: str) -> list[AttorneyOut]:
         # Generate varied mock data to look realistic
         return [
             AttorneyOut(

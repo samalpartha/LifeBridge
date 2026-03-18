@@ -1,17 +1,18 @@
-from typing import List, Optional
+
 from pydantic import BaseModel
+
 
 class AttorneyBase(BaseModel):
     name: str
-    firm: Optional[str] = None
-    practice_area: Optional[str] = None
+    firm: str | None = None
+    practice_area: str | None = None
     location_text: str
-    image: Optional[str] = None
-    bio: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    website: Optional[str] = None
-    address: Optional[str] = None
+    image: str | None = None
+    bio: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    website: str | None = None
+    address: str | None = None
     source: str = "CourtListener"
 
 class AttorneyOut(AttorneyBase):
@@ -21,6 +22,6 @@ class AttorneyOut(AttorneyBase):
     confidence_score: float
 
 class AttorneySearchResponse(BaseModel):
-    results: List[AttorneyOut]
-    location_city: Optional[str] = None
-    location_state: Optional[str] = None
+    results: list[AttorneyOut]
+    location_city: str | None = None
+    location_state: str | None = None

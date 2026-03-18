@@ -141,7 +141,12 @@ function buildHavenPopup(haven: SafeHaven): string {
 
 type LeafletContainer = HTMLDivElement & { _leaflet_id?: number };
 
-export default function MapView({ userLocation, havens, selectedHaven, onHavenClick }: MapViewProps) {
+export default function MapView({
+  userLocation,
+  havens,
+  selectedHaven,
+  onHavenClick,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const overlayLayerRef = useRef<L.LayerGroup | null>(null);
@@ -163,10 +168,10 @@ export default function MapView({ userLocation, havens, selectedHaven, onHavenCl
       delete container._leaflet_id;
     }
 
-    const map = L.map(container, { zoomControl: true, attributionControl: true }).setView(
-      [userLocation.lat, userLocation.lon],
-      12
-    );
+    const map = L.map(container, {
+      zoomControl: true,
+      attributionControl: true,
+    }).setView([userLocation.lat, userLocation.lon], 12);
 
     mapRef.current = map;
     L.tileLayer(TILE_URL, { attribution: TILE_ATTRIBUTION }).addTo(map);
@@ -195,7 +200,7 @@ export default function MapView({ userLocation, havens, selectedHaven, onHavenCl
     const userPoint = L.latLng(userLocation.lat, userLocation.lon);
     L.marker(userPoint, { icon: userIcon })
       .bindPopup(
-        '<div style="text-align:center;"><strong>Your Location</strong><br /><span style="font-size:12px;color:#4b5563;">Current position</span></div>'
+        '<div style="text-align:center;"><strong>Your Location</strong><br /><span style="font-size:12px;color:#4b5563;">Current position</span></div>',
       )
       .addTo(overlayLayer);
 
@@ -210,7 +215,9 @@ export default function MapView({ userLocation, havens, selectedHaven, onHavenCl
     let selectedMarker: L.Marker | null = null;
 
     for (const haven of havens) {
-      const marker = L.marker([haven.lat, haven.lon], { icon: getHavenIcon(haven.type) })
+      const marker = L.marker([haven.lat, haven.lon], {
+        icon: getHavenIcon(haven.type),
+      })
         .bindPopup(buildHavenPopup(haven))
         .on("click", () => onHavenClickRef.current(haven))
         .addTo(overlayLayer);
@@ -249,7 +256,8 @@ export default function MapView({ userLocation, havens, selectedHaven, onHavenCl
 
       <style jsx global>{`
         @keyframes pulse {
-          0%, 100% {
+          0%,
+          100% {
             box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
           }
           50% {

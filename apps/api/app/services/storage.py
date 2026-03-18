@@ -4,7 +4,7 @@ import os
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 
 @dataclass
@@ -59,7 +59,7 @@ class S3ObjectStore(ObjectStore):
         access_key: str,
         secret_key: str,
         region: str = "us-east-1",
-        public_base_url: Optional[str] = None,
+        public_base_url: str | None = None,
     ) -> None:
         import boto3
 

@@ -10,10 +10,40 @@ export type CaseOut = {
 
 export type Outputs = {
   case: CaseOut;
-  checklist: Array<{ id: string; label: string; status: string; notes: string; evidence_chunk_ids: string[] }>;
-  timeline: Array<{ id: string; label: string; status: string; due_date: string; owner: string; notes: string; evidence_chunk_ids: string[] }>;
-  risks: Array<{ id: string; category: string; severity: string; statement: string; reason: string; evidence_chunk_ids: string[] }>;
-  chunks: Record<string, { id: string; document_id: string; filename: string; idx: number; text: string }>;
+  checklist: Array<{
+    id: string;
+    label: string;
+    status: string;
+    notes: string;
+    evidence_chunk_ids: string[];
+  }>;
+  timeline: Array<{
+    id: string;
+    label: string;
+    status: string;
+    due_date: string;
+    owner: string;
+    notes: string;
+    evidence_chunk_ids: string[];
+  }>;
+  risks: Array<{
+    id: string;
+    category: string;
+    severity: string;
+    statement: string;
+    reason: string;
+    evidence_chunk_ids: string[];
+  }>;
+  chunks: Record<
+    string,
+    {
+      id: string;
+      document_id: string;
+      filename: string;
+      idx: number;
+      text: string;
+    }
+  >;
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -21,9 +51,9 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       ...(init?.headers || {}),
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     },
-    cache: "no-store"
+    cache: "no-store",
   });
   if (!res.ok) {
     const text = await res.text();
@@ -32,31 +62,48 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export async function createCase(title: string, scenario: string): Promise<CaseOut> {
+export async function createCase(
+  title: string,
+  scenario: string,
+): Promise<CaseOut> {
   return api<CaseOut>("/cases", {
     method: "POST",
-    body: JSON.stringify({ title, scenario })
+    body: JSON.stringify({ title, scenario }),
   });
 }
 
 export async function createDemoPreset(): Promise<{ case_id: string }> {
-  return api<{ case_id: string }>("/demo/preset", { method: "POST", body: JSON.stringify({}) });
+  return api<{ case_id: string }>("/demo/preset", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 export async function analyzeCase(caseId: string): Promise<{ ok: boolean }> {
-  return api<{ ok: boolean }>(`/cases/${caseId}/analyze`, { method: "POST", body: JSON.stringify({}) });
+  return api<{ ok: boolean }>(`/cases/${caseId}/analyze`, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 export async function getOutputs(caseId: string): Promise<Outputs> {
-  const res = await fetch(`${API_BASE}/cases/${caseId}/outputs`, { cache: "no-store" });
+  const res = await fetch(`${API_BASE}/cases/${caseId}/outputs`, {
+    cache: "no-store",
+  });
   if (!res.ok) throw new Error(`Failed to load outputs: ${res.status}`);
   return (await res.json()) as Outputs;
 }
 
-export async function uploadDocument(caseId: string, file: File): Promise<{ document_id: string; chunks: number }> {
+export async function uploadDocument(
+  caseId: string,
+  file: File,
+): Promise<{ document_id: string; chunks: number }> {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/cases/${caseId}/documents`, { method: "POST", body: fd });
+  const res = await fetch(`${API_BASE}/cases/${caseId}/documents`, {
+    method: "POST",
+    body: fd,
+  });
   if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
   return (await res.json()) as { document_id: string; chunks: number };
 }
@@ -81,7 +128,10 @@ export async function getCaseDocuments(caseId: string): Promise<DocumentOut[]> {
   return res.json();
 }
 
-export async function updateChecklistStatus(itemId: string, status: string): Promise<{ id: string; status: string }> {
+export async function updateChecklistStatus(
+  itemId: string,
+  status: string,
+): Promise<{ id: string; status: string }> {
   const res = await fetch(`${API_BASE}/checklist/${itemId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -91,7 +141,10 @@ export async function updateChecklistStatus(itemId: string, status: string): Pro
   return res.json();
 }
 
-export async function updateTimelineStatus(itemId: string, status: string): Promise<{ id: string; status: string }> {
+export async function updateTimelineStatus(
+  itemId: string,
+  status: string,
+): Promise<{ id: string; status: string }> {
   const res = await fetch(`${API_BASE}/timeline/${itemId}/status`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -101,7 +154,10 @@ export async function updateTimelineStatus(itemId: string, status: string): Prom
   return res.json();
 }
 
-export async function updateCaseStory(caseId: string, story: string): Promise<CaseOut> {
+export async function updateCaseStory(
+  caseId: string,
+  story: string,
+): Promise<CaseOut> {
   const res = await fetch(`${API_BASE}/cases/${caseId}/story`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

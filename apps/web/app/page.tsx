@@ -67,8 +67,9 @@ export default function HomePage() {
           One app for crisis response and immigration continuity
         </h1>
         <p className="mt-3 max-w-3xl text-base text-gray-600">
-          LifeBridge helps people during emergencies and the long recovery after displacement.
-          Use Crisis Corridor for immediate safety, and Case Workspace to keep legal and life records in order.
+          LifeBridge helps people during emergencies and the long recovery after
+          displacement. Use Crisis Corridor for immediate safety, and Case
+          Workspace to keep legal and life records in order.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -101,7 +102,9 @@ export default function HomePage() {
               <div className="mb-4 inline-flex rounded-lg bg-white p-2 text-gray-700 shadow-sm">
                 <Icon className="h-5 w-5" />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{stream.title}</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {stream.title}
+              </h2>
               <p className="mt-2 text-sm text-gray-600">{stream.description}</p>
               <div className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
                 {stream.cta}

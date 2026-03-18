@@ -8,14 +8,14 @@ import structlog
 
 def configure_logging() -> None:
     """Configure structured logging with rich output."""
-    
+
     # Configure standard logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=logging.INFO,
     )
-    
+
     # Configure structlog
     structlog.configure(
         processors=[

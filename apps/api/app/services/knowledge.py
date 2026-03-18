@@ -1,7 +1,8 @@
-import httpx
 import time
-from typing import List, Dict, Optional
-from ..schemas.knowledge import KnowledgeTopic, KnowledgeContent
+
+import httpx
+
+from ..schemas.knowledge import KnowledgeContent, KnowledgeTopic
 from ..utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +21,7 @@ class KnowledgeService:
             "repo_url": "https://github.com/AwesomeVisa/awesome-immigration/blob/master"
         }
     }
-    
+
     TOPICS = [
         # US Specific (t3nsor)
         {"id": "general", "source": "t3nsor", "file": "general.md", "title": "🇺🇸 General US Admin", "description": "Overview of US immigration concepts"},
@@ -29,7 +30,7 @@ class KnowledgeService:
         {"id": "tn", "source": "t3nsor", "file": "TN.md", "title": "🇺🇸 TN Status", "description": "NAFTA Professionals (Canada/Mexico)"},
         {"id": "green-card", "source": "t3nsor", "file": "green-card.md", "title": "🇺🇸 Green Card", "description": "Permanent Residence"},
         {"id": "visas", "source": "t3nsor", "file": "visas.md", "title": "🇺🇸 Visa Types", "description": "Overview of different visa categories"},
-        
+
         # Global / Awesome Immigration (AwesomeVisa)
         {"id": "checklist", "source": "awesome", "file": "README.md", "title": "✅ Ultimate Immigration Checklist", "description": "Step-by-step guide for any country"},
         {"id": "digital-nomad", "source": "awesome", "file": "nomad.md", "title": "🌍 Digital Nomad Visas", "description": "Remote work visas for 50+ countries"},
@@ -38,10 +39,10 @@ class KnowledgeService:
         {"id": "job-seeker", "source": "awesome", "file": "jobseeker.md", "title": "🔍 Job Seeker Visas", "description": "Visas allowing you to enter and search for work"},
     ]
 
-    _content_cache: Dict[str, Dict] = {} # {slug: {content: str, timestamp: float, sha: str}}
+    _content_cache: dict[str, dict] = {} # {slug: {content: str, timestamp: float, sha: str}}
     _CACHE_TTL = 3600  # 1 hour
 
-    async def get_topics(self) -> List[KnowledgeTopic]:
+    async def get_topics(self) -> list[KnowledgeTopic]:
         topics = []
         for t in self.TOPICS:
             source_config = self.SOURCES.get(t["source"], self.SOURCES["t3nsor"])
@@ -53,9 +54,9 @@ class KnowledgeService:
             ))
         return topics
 
-    async def get_content(self, topic_id: str) -> Optional[KnowledgeContent]:
+    async def get_content(self, topic_id: str) -> KnowledgeContent | None:
         topic = next((t for t in self.TOPICS if t["id"] == topic_id), None)
-        
+
         # Dynamic Topic Fallback
         if not topic:
             # Assume it's a t3nsor file we haven't explicitly whitelisted
@@ -87,26 +88,26 @@ class KnowledgeService:
                 content_url = f"{source_config['base_url']}/{topic['file']}"
                 logger.info("fetching_knowledge_content", url=content_url)
                 resp = await client.get(content_url)
-                
+
                 # FALLBACK: If 404, try web search
                 if resp.status_code == 404:
                     logger.info("topic_not_found_searching_web", topic=topic["title"])
                     try:
                         from duckduckgo_search import DDGS
-                        
+
                         search_query = f"US immigration {topic['title']} guide"
                         results = list(DDGS().text(search_query, max_results=5))
-                        
+
                         md_content = f"# {topic['title']}\n\n"
                         md_content += "> **Note:** This topic was not found in our curated library, so we searched the web for you.\n\n"
-                        
+
                         if results:
                             for res in results:
                                 md_content += f"### [{res['title']}]({res['href']})\n"
                                 md_content += f"{res['body']}\n\n"
                         else:
                             md_content += "No search results found. Please try a different topic."
-                            
+
                         return KnowledgeContent(
                             topic_id=topic_id,
                             title=topic["title"],

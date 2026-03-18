@@ -1,5 +1,7 @@
-from PIL import Image, ImageDraw
 import os
+
+from PIL import Image, ImageDraw
+
 
 def create_image():
     # Ensure directory exists

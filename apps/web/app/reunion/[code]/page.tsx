@@ -17,7 +17,9 @@ export default function ReunionCodePage() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/crisis/beacons/${encodeURIComponent(code)}`);
+        const response = await fetch(
+          `/api/crisis/beacons/${encodeURIComponent(code)}`,
+        );
         if (!response.ok) {
           throw new Error("Beacon not found");
         }
@@ -35,20 +37,36 @@ export default function ReunionCodePage() {
     <div className="max-w-2xl mx-auto py-10 px-4">
       <h1 className="text-2xl font-bold mb-4">Family Reunification Beacon</h1>
       <p className="text-gray-600 mb-6">
-        Reunion code: <code className="px-2 py-1 bg-gray-100 rounded">{code}</code>
+        Reunion code:{" "}
+        <code className="px-2 py-1 bg-gray-100 rounded">{code}</code>
       </p>
 
       {loading ? (
-        <div className="rounded border p-4 text-gray-600">Loading beacon...</div>
+        <div className="rounded border p-4 text-gray-600">
+          Loading beacon...
+        </div>
       ) : error ? (
-        <div className="rounded border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>
+        <div className="rounded border border-red-200 bg-red-50 p-4 text-red-700">
+          {error}
+        </div>
       ) : (
         <div className="rounded border p-4 space-y-2">
-          <p><strong>Status:</strong> {beacon.status}</p>
-          <p><strong>Family hint:</strong> {beacon.family_name_hint}</p>
-          <p><strong>Location:</strong> {beacon.lat}, {beacon.lon}</p>
-          <p><strong>Message:</strong> {beacon.message || "No message provided"}</p>
-          <p><strong>Last updated:</strong> {new Date(beacon.last_updated).toLocaleString()}</p>
+          <p>
+            <strong>Status:</strong> {beacon.status}
+          </p>
+          <p>
+            <strong>Family hint:</strong> {beacon.family_name_hint}
+          </p>
+          <p>
+            <strong>Location:</strong> {beacon.lat}, {beacon.lon}
+          </p>
+          <p>
+            <strong>Message:</strong> {beacon.message || "No message provided"}
+          </p>
+          <p>
+            <strong>Last updated:</strong>{" "}
+            {new Date(beacon.last_updated).toLocaleString()}
+          </p>
         </div>
       )}
 

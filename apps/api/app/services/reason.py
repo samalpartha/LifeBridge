@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import List, Sequence
 
 
 def _norm(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "").strip()).lower()
 
 
-def _find_chunks(chunks: Sequence[str], keywords: Sequence[str], max_hits: int = 3) -> List[int]:
+def _find_chunks(chunks: Sequence[str], keywords: Sequence[str], max_hits: int = 3) -> list[int]:
     keys = [_norm(k) for k in keywords if k.strip()]
-    hits: List[int] = []
+    hits: list[int] = []
     for i, c in enumerate(chunks):
         c2 = _norm(c)
         if any(k in c2 for k in keys):
@@ -26,7 +26,7 @@ class ChecklistItem:
     label: str
     status: str
     notes: str
-    evidence_idx: List[int]
+    evidence_idx: list[int]
 
 
 @dataclass
@@ -35,7 +35,7 @@ class TimelineItem:
     due_date: str
     owner: str
     notes: str
-    evidence_idx: List[int]
+    evidence_idx: list[int]
 
 
 @dataclass
@@ -44,15 +44,15 @@ class RiskItem:
     severity: str
     statement: str
     reason: str
-    evidence_idx: List[int]
+    evidence_idx: list[int]
 
 
 @dataclass
 class ReasoningResult:
     summary: str
-    checklist: List[ChecklistItem]
-    timeline: List[TimelineItem]
-    risks: List[RiskItem]
+    checklist: list[ChecklistItem]
+    timeline: list[TimelineItem]
+    risks: list[RiskItem]
 
 
 def build_reasoning(scenario: str, chunks: Sequence[str], user_story: str = "") -> ReasoningResult:
@@ -63,9 +63,9 @@ def build_reasoning(scenario: str, chunks: Sequence[str], user_story: str = "") 
     from .llm import generate_case_plan_llm
     llm_plan = generate_case_plan_llm(scenario, user_story, chunks)
 
-    checklist: List[ChecklistItem] = []
-    timeline: List[TimelineItem] = []
-    risks: List[RiskItem] = []
+    checklist: list[ChecklistItem] = []
+    timeline: list[TimelineItem] = []
+    risks: list[RiskItem] = []
 
     if llm_plan:
         # Map LLM JSON to internal objects
@@ -76,7 +76,7 @@ def build_reasoning(scenario: str, chunks: Sequence[str], user_story: str = "") 
                 notes=item.get("notes", ""),
                 evidence_idx=_find_chunks(chunks, item.get("evidence_keywords", []))
             ))
-        
+
         for item in llm_plan.get("timeline", []):
             timeline.append(TimelineItem(
                 label=item.get("label", "Task"),
@@ -94,7 +94,7 @@ def build_reasoning(scenario: str, chunks: Sequence[str], user_story: str = "") 
                 reason=item.get("reason", ""),
                 evidence_idx=_find_chunks(chunks, item.get("evidence_keywords", []))
             ))
-            
+
         return ReasoningResult(
             summary="AI-Generated Case Plan (powered by Gemini)",
             checklist=checklist,
@@ -270,12 +270,12 @@ def build_reasoning(scenario: str, chunks: Sequence[str], user_story: str = "") 
                 TimelineItem(
                    label="Schedule Consular Appointment (DS-160)",
                    due_date="ASAP",
-                   owner="user", 
+                   owner="user",
                    notes="Visa appointment wait times can be long. Complete DS-160 and book immediately.",
                    evidence_idx=[]
                 )
              )
-        
+
         if not has_any("i-797", "approval notice", "form i-797"):
              risks.append(
                 RiskItem(

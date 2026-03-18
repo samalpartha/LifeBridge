@@ -3,7 +3,6 @@ from __future__ import annotations
 import io
 import re
 from dataclasses import dataclass
-from typing import Iterable, List, Tuple
 
 
 def _clean(text: str) -> str:
@@ -15,7 +14,7 @@ def _clean(text: str) -> str:
 @dataclass
 class ExtractResult:
     full_text: str
-    chunks: List[str]
+    chunks: list[str]
 
 
 def preprocess_image(data: bytes) -> bytes:
@@ -25,7 +24,7 @@ def preprocess_image(data: bytes) -> bytes:
     """
     try:
         from wand.image import Image as WandImage
-        
+
         with WandImage(blob=data) as img:
             # Deskew to straighten scanned documents
             img.deskew(0.5 * img.quantum_range)
@@ -41,7 +40,7 @@ def preprocess_image(data: bytes) -> bytes:
         return data
 
 
-def chunk_text(text: str, chunk_size: int = 600) -> List[str]:
+def chunk_text(text: str, chunk_size: int = 600) -> list[str]:
     text = _clean(text)
     if not text:
         return []
@@ -59,7 +58,7 @@ def extract_text_from_pdf(data: bytes) -> str:
         from pypdf import PdfReader
 
         reader = PdfReader(io.BytesIO(data))
-        parts: List[str] = []
+        parts: list[str] = []
         for p in reader.pages:
             t = p.extract_text() or ""
             if t.strip():
@@ -71,12 +70,12 @@ def extract_text_from_pdf(data: bytes) -> str:
 
 def extract_text_from_scanned_pdf(data: bytes) -> str:
     try:
-        from pdf2image import convert_from_bytes
         import pytesseract
-        
+        from pdf2image import convert_from_bytes
+
         images = convert_from_bytes(data)
         text = ""
-        for i, img in enumerate(images):
+        for img in images:
             # Convert PIL image to bytes for preprocessing
             img_byte_arr = io.BytesIO()
             img.save(img_byte_arr, format='PNG')
@@ -98,8 +97,8 @@ def extract_text_from_scanned_pdf(data: bytes) -> str:
 
 def extract_text_from_image(data: bytes) -> str:
     try:
-        from PIL import Image
         import pytesseract
+        from PIL import Image
 
         # Preprocess first
         processed_data = preprocess_image(data)

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import datetime as dt
-from sqlalchemy import String, DateTime, ForeignKey, Integer, Text
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -19,11 +20,11 @@ class Case(Base):
     summary: Mapped[str] = mapped_column(Text, default="")
     user_story: Mapped[str] = mapped_column(Text, default="")
 
-    documents: Mapped[list["Document"]] = relationship(back_populates="case", cascade="all, delete-orphan")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="case", cascade="all, delete-orphan")
-    risks: Mapped[list["Risk"]] = relationship(back_populates="case", cascade="all, delete-orphan")
-    timeline_items: Mapped[list["TimelineItem"]] = relationship(back_populates="case", cascade="all, delete-orphan")
-    checklist_items: Mapped[list["ChecklistItem"]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    documents: Mapped[list[Document]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    risks: Mapped[list[Risk]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    timeline_items: Mapped[list[TimelineItem]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    checklist_items: Mapped[list[ChecklistItem]] = relationship(back_populates="case", cascade="all, delete-orphan")
 
 
 class Document(Base):
@@ -38,7 +39,7 @@ class Document(Base):
     storage_key: Mapped[str] = mapped_column(String(512))
 
     case: Mapped[Case] = relationship(back_populates="documents")
-    chunks: Mapped[list["Chunk"]] = relationship(back_populates="document", cascade="all, delete-orphan")
+    chunks: Mapped[list[Chunk]] = relationship(back_populates="document", cascade="all, delete-orphan")
 
 
 class Chunk(Base):

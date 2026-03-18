@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { 
+import {
   Activity,
-  AlertCircle, 
+  AlertCircle,
   Clock3,
-  MapPin, 
-  Navigation, 
-  Users, 
-  Heart, 
+  MapPin,
+  Navigation,
+  Users,
+  Heart,
   Shield,
   Bot,
   Radio,
@@ -18,7 +18,7 @@ import {
   LocateFixed,
   RefreshCcw,
   Signal,
-  BadgeInfo
+  BadgeInfo,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { BrandLogo } from "../components/BrandLogo";
@@ -26,9 +26,11 @@ import { BrandLogo } from "../components/BrandLogo";
 // Dynamic import for Leaflet (client-side only)
 const MapView = dynamic(() => import("../components/MapView"), {
   ssr: false,
-  loading: () => <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
-    <p className="text-gray-500">Loading map...</p>
-  </div>
+  loading: () => (
+    <div className="w-full h-96 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+      <p className="text-gray-500">Loading map...</p>
+    </div>
+  ),
 });
 
 interface SafeHaven {
@@ -69,12 +71,17 @@ interface ActivityEvent {
 }
 
 export default function CrisisPage() {
-  const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lon: number;
+  } | null>(null);
   const [havens, setHavens] = useState<SafeHaven[]>([]);
   const [routes, setRoutes] = useState<RouteOption[]>([]);
   const [selectedHaven, setSelectedHaven] = useState<SafeHaven | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"havens" | "routes" | "reunite" | "help" | "copilot">("havens");
+  const [activeTab, setActiveTab] = useState<
+    "havens" | "routes" | "reunite" | "help" | "copilot"
+  >("havens");
   const [runtime, setRuntime] = useState<RuntimeInfo | null>(null);
 
   const [beaconFamilyHint, setBeaconFamilyHint] = useState("");
@@ -102,7 +109,11 @@ export default function CrisisPage() {
   const [lastSyncAt, setLastSyncAt] = useState<number | null>(null);
   const [clockNow, setClockNow] = useState<number>(Date.now());
 
-  const pushActivity = (title: string, detail?: string, tone: ActivityTone = "info") => {
+  const pushActivity = (
+    title: string,
+    detail?: string,
+    tone: ActivityTone = "info",
+  ) => {
     const event: ActivityEvent = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       timestamp: Date.now(),
@@ -113,13 +124,21 @@ export default function CrisisPage() {
     setActivityFeed((previous) => [event, ...previous].slice(0, 12));
   };
 
-  const markSynced = (title: string, detail?: string, tone: ActivityTone = "info") => {
+  const markSynced = (
+    title: string,
+    detail?: string,
+    tone: ActivityTone = "info",
+  ) => {
     setLastSyncAt(Date.now());
     pushActivity(title, detail, tone);
   };
 
   useEffect(() => {
-    pushActivity("Console initialized", "Preparing runtime and geolocation...", "info");
+    pushActivity(
+      "Console initialized",
+      "Preparing runtime and geolocation...",
+      "info",
+    );
     fetchRuntime();
     const runtimeInterval = window.setInterval(() => {
       void fetchRuntime();
@@ -133,10 +152,14 @@ export default function CrisisPage() {
         (position) => {
           const loc = {
             lat: position.coords.latitude,
-            lon: position.coords.longitude
+            lon: position.coords.longitude,
           };
           setUserLocation(loc);
-          markSynced("Location locked", `${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}`, "success");
+          markSynced(
+            "Location locked",
+            `${loc.lat.toFixed(3)}, ${loc.lon.toFixed(3)}`,
+            "success",
+          );
           searchNearbyHavens(loc.lat, loc.lon);
           loadHelpNearby(loc.lat, loc.lon);
         },
@@ -144,10 +167,14 @@ export default function CrisisPage() {
           // Use default location (e.g., crisis region)
           const defaultLoc = { lat: 35.0, lon: 36.0 };
           setUserLocation(defaultLoc);
-          pushActivity("Location fallback active", "Using default coordinates for continuity", "warning");
+          pushActivity(
+            "Location fallback active",
+            "Using default coordinates for continuity",
+            "warning",
+          );
           searchNearbyHavens(defaultLoc.lat, defaultLoc.lon);
           loadHelpNearby(defaultLoc.lat, defaultLoc.lon);
-        }
+        },
       );
     }
     return () => {
@@ -164,10 +191,14 @@ export default function CrisisPage() {
       markSynced(
         "Runtime heartbeat",
         `Mode: ${(data?.active_mode || "unknown").toUpperCase()}`,
-        data?.active_mode === "live" ? "success" : "warning"
+        data?.active_mode === "live" ? "success" : "warning",
       );
     } catch {
-      pushActivity("Runtime check failed", "Could not refresh live runtime status", "warning");
+      pushActivity(
+        "Runtime check failed",
+        "Could not refresh live runtime status",
+        "warning",
+      );
     }
   };
 
@@ -175,21 +206,25 @@ export default function CrisisPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/crisis/havens/search?lat=${lat}&lon=${lon}&radius_km=20`
+        `/api/crisis/havens/search?lat=${lat}&lon=${lon}&radius_km=20`,
       );
       const data = await response.json();
       setHavens(data);
       markSynced(
         "Safe havens refreshed",
         `${Array.isArray(data) ? data.length : 0} results in 20 km`,
-        Array.isArray(data) && data.length > 0 ? "success" : "warning"
+        Array.isArray(data) && data.length > 0 ? "success" : "warning",
       );
       if (Array.isArray(data) && data.length === 0) {
         toast("No havens found nearby. Seed demo data to populate map.");
       }
     } catch {
       toast.error("Failed to load nearby havens");
-      pushActivity("Haven refresh failed", "Could not fetch nearby havens", "warning");
+      pushActivity(
+        "Haven refresh failed",
+        "Could not fetch nearby havens",
+        "warning",
+      );
     } finally {
       setLoading(false);
     }
@@ -197,10 +232,10 @@ export default function CrisisPage() {
 
   const generateRoutes = async (haven: SafeHaven) => {
     if (!userLocation) return;
-    
+
     setLoading(true);
     setSelectedHaven(haven);
-    
+
     try {
       const response = await fetch("/api/crisis/routes/generate", {
         method: "POST",
@@ -212,17 +247,17 @@ export default function CrisisPage() {
           end_lon: haven.lon,
           mode: "walking",
           time_of_day: "day",
-          user_constraints: []
-        })
+          user_constraints: [],
+        }),
       });
-      
+
       const data = await response.json();
       setRoutes(data.routes);
       setActiveTab("routes");
       markSynced(
         "Routes generated",
         `${Array.isArray(data.routes) ? data.routes.length : 0} options to ${haven.name}`,
-        "success"
+        "success",
       );
       await runCopilot(
         `Recommend safest navigation to ${haven.name}. Include why each route is safer or riskier.`,
@@ -233,11 +268,15 @@ export default function CrisisPage() {
           end_lon: haven.lon,
           mode: "walking",
           user_constraints: [],
-        }
+        },
       );
     } catch {
       toast.error("Failed to generate route options");
-      pushActivity("Route generation failed", "Navigation options are unavailable", "warning");
+      pushActivity(
+        "Route generation failed",
+        "Navigation options are unavailable",
+        "warning",
+      );
     } finally {
       setLoading(false);
     }
@@ -245,7 +284,7 @@ export default function CrisisPage() {
 
   const createCheckin = async () => {
     if (!userLocation) return;
-    
+
     try {
       const response = await fetch("/api/crisis/checkins", {
         method: "POST",
@@ -256,17 +295,25 @@ export default function CrisisPage() {
           lon: userLocation.lon,
           status: "safe",
           battery_level: 80,
-          message: "I am safe"
-        })
+          message: "I am safe",
+        }),
       });
       if (!response.ok) {
         throw new Error("Check-in failed");
       }
       toast.success("Check-in successful. Status logged.");
-      markSynced("Safety check-in sent", "Status marked safe and broadcast-ready", "success");
+      markSynced(
+        "Safety check-in sent",
+        "Status marked safe and broadcast-ready",
+        "success",
+      );
     } catch {
       toast.error("Check-in failed");
-      pushActivity("Check-in failed", "Could not submit safety status", "warning");
+      pushActivity(
+        "Check-in failed",
+        "Could not submit safety status",
+        "warning",
+      );
     }
   };
 
@@ -275,7 +322,9 @@ export default function CrisisPage() {
       toast.error("Provide family hint and location");
       return;
     }
-    const generatedCode = beaconCode || `BEACON-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const generatedCode =
+      beaconCode ||
+      `BEACON-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     try {
       const response = await fetch("/api/crisis/beacons", {
         method: "POST",
@@ -300,33 +349,51 @@ export default function CrisisPage() {
       markSynced("Family beacon created", generatedCode, "success");
     } catch (error: any) {
       toast.error(error.message || "Beacon creation failed");
-      pushActivity("Beacon creation failed", error?.message || "Try a different code", "warning");
+      pushActivity(
+        "Beacon creation failed",
+        error?.message || "Try a different code",
+        "warning",
+      );
     }
   };
 
   const lookupBeacon = async () => {
     if (!beaconLookupCode.trim()) return;
     try {
-      const response = await fetch(`/api/crisis/beacons/${encodeURIComponent(beaconLookupCode.trim())}`);
+      const response = await fetch(
+        `/api/crisis/beacons/${encodeURIComponent(beaconLookupCode.trim())}`,
+      );
       if (!response.ok) {
         throw new Error("Beacon not found");
       }
       const data = await response.json();
       setBeaconLookupResult(data);
       toast.success("Beacon found");
-      markSynced("Beacon located", beaconLookupCode.trim().toUpperCase(), "success");
+      markSynced(
+        "Beacon located",
+        beaconLookupCode.trim().toUpperCase(),
+        "success",
+      );
     } catch (error: any) {
       setBeaconLookupResult(null);
       toast.error(error.message || "Beacon lookup failed");
-      pushActivity("Beacon lookup failed", error?.message || "Code not found", "warning");
+      pushActivity(
+        "Beacon lookup failed",
+        error?.message || "Code not found",
+        "warning",
+      );
     }
   };
 
   const loadHelpNearby = async (lat: number, lon: number) => {
     try {
       const [requestResponse, offerResponse] = await Promise.all([
-        fetch(`/api/crisis/help/requests/nearby?lat=${lat}&lon=${lon}&radius_km=20`),
-        fetch(`/api/crisis/help/offers/nearby?lat=${lat}&lon=${lon}&radius_km=20`),
+        fetch(
+          `/api/crisis/help/requests/nearby?lat=${lat}&lon=${lon}&radius_km=20`,
+        ),
+        fetch(
+          `/api/crisis/help/offers/nearby?lat=${lat}&lon=${lon}&radius_km=20`,
+        ),
       ]);
       if (requestResponse.ok) {
         const requestData = await requestResponse.json();
@@ -334,7 +401,7 @@ export default function CrisisPage() {
         pushActivity(
           "Nearby requests refreshed",
           `${Array.isArray(requestData) ? requestData.length : 0} request(s)`,
-          "info"
+          "info",
         );
       }
       if (offerResponse.ok) {
@@ -343,11 +410,15 @@ export default function CrisisPage() {
         pushActivity(
           "Nearby offers refreshed",
           `${Array.isArray(offerData) ? offerData.length : 0} offer(s)`,
-          "info"
+          "info",
         );
       }
     } catch {
-      pushActivity("Help feed refresh failed", "Could not load nearby requests/offers", "warning");
+      pushActivity(
+        "Help feed refresh failed",
+        "Could not load nearby requests/offers",
+        "warning",
+      );
     }
   };
 
@@ -374,11 +445,19 @@ export default function CrisisPage() {
       }
       setHelpDetails("");
       toast.success("Help request submitted");
-      markSynced("Help request submitted", `${helpCategory} • ${helpUrgency}`, "success");
+      markSynced(
+        "Help request submitted",
+        `${helpCategory} • ${helpUrgency}`,
+        "success",
+      );
       await loadHelpNearby(userLocation.lat, userLocation.lon);
     } catch (error: any) {
       toast.error(error.message || "Failed to submit help request");
-      pushActivity("Help request failed", error?.message || "Please retry", "warning");
+      pushActivity(
+        "Help request failed",
+        error?.message || "Please retry",
+        "warning",
+      );
     }
   };
 
@@ -406,15 +485,26 @@ export default function CrisisPage() {
       }
       setOfferDetails("");
       toast.success("Help offer submitted");
-      markSynced("Help offer submitted", `${offerCategory} • ${offerRadius} km radius`, "success");
+      markSynced(
+        "Help offer submitted",
+        `${offerCategory} • ${offerRadius} km radius`,
+        "success",
+      );
       await loadHelpNearby(userLocation.lat, userLocation.lon);
     } catch (error: any) {
       toast.error(error.message || "Failed to submit help offer");
-      pushActivity("Help offer failed", error?.message || "Please retry", "warning");
+      pushActivity(
+        "Help offer failed",
+        error?.message || "Please retry",
+        "warning",
+      );
     }
   };
 
-  const runCopilot = async (prompt: string, context: Record<string, any> = {}) => {
+  const runCopilot = async (
+    prompt: string,
+    context: Record<string, any> = {},
+  ) => {
     if (!prompt.trim()) return;
     try {
       const response = await fetch("/api/crisis/agent/query", {
@@ -423,7 +513,9 @@ export default function CrisisPage() {
         body: JSON.stringify({
           query: prompt,
           context: {
-            ...(userLocation ? { lat: userLocation.lat, lon: userLocation.lon } : {}),
+            ...(userLocation
+              ? { lat: userLocation.lat, lon: userLocation.lon }
+              : {}),
             append_operational_plan: true,
             include_local_agents: true,
             ...context,
@@ -440,13 +532,19 @@ export default function CrisisPage() {
       setCopilotMode(data.mode || "");
       markSynced(
         "Copilot response received",
-        data.trace_id ? `Trace ${String(data.trace_id).slice(0, 8)}` : "Trace unavailable",
-        "success"
+        data.trace_id
+          ? `Trace ${String(data.trace_id).slice(0, 8)}`
+          : "Trace unavailable",
+        "success",
       );
       return data;
     } catch {
       toast.error("Copilot is unavailable");
-      pushActivity("Copilot unavailable", "Could not complete the request", "warning");
+      pushActivity(
+        "Copilot unavailable",
+        "Could not complete the request",
+        "warning",
+      );
       return null;
     }
   };
@@ -455,7 +553,7 @@ export default function CrisisPage() {
     const badges = {
       official: { color: "bg-green-100 text-green-800", label: "✓ Official" },
       verified: { color: "bg-blue-100 text-blue-800", label: "✓ Verified" },
-      community: { color: "bg-gray-100 text-gray-800", label: "Community" }
+      community: { color: "bg-gray-100 text-gray-800", label: "Community" },
     };
     const badge = badges[tier as keyof typeof badges] || badges.community;
     return (
@@ -470,7 +568,7 @@ export default function CrisisPage() {
       available: { color: "bg-green-100 text-green-800", label: "Available" },
       limited: { color: "bg-yellow-100 text-yellow-800", label: "Limited" },
       full: { color: "bg-red-100 text-red-800", label: "Full" },
-      unknown: { color: "bg-gray-100 text-gray-800", label: "Unknown" }
+      unknown: { color: "bg-gray-100 text-gray-800", label: "Unknown" },
     };
     const badge = badges[status as keyof typeof badges] || badges.unknown;
     return (
@@ -488,7 +586,10 @@ export default function CrisisPage() {
 
   const syncAgeLabel = (() => {
     if (!lastSyncAt) return "Waiting for first sync";
-    const elapsedSeconds = Math.max(Math.floor((clockNow - lastSyncAt) / 1000), 0);
+    const elapsedSeconds = Math.max(
+      Math.floor((clockNow - lastSyncAt) / 1000),
+      0,
+    );
     if (elapsedSeconds < 60) return `${elapsedSeconds}s ago`;
     const minutes = Math.floor(elapsedSeconds / 60);
     const seconds = elapsedSeconds % 60;
@@ -509,14 +610,24 @@ export default function CrisisPage() {
           <BrandLogo variant="light" iconSize={44} />
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold">
-              <span className={runtime?.active_mode === "live" ? "live-dot bg-emerald-300" : "h-2.5 w-2.5 rounded-full bg-amber-300"} />
-              {runtime?.active_mode === "live" ? "Live Runtime" : "Fallback Runtime"}
+              <span
+                className={
+                  runtime?.active_mode === "live"
+                    ? "live-dot bg-emerald-300"
+                    : "h-2.5 w-2.5 rounded-full bg-amber-300"
+                }
+              />
+              {runtime?.active_mode === "live"
+                ? "Live Runtime"
+                : "Fallback Runtime"}
             </div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-xs font-semibold">
               <Clock3 className="h-3.5 w-3.5" />
-              <span suppressHydrationWarning>{new Date(clockNow).toLocaleTimeString()}</span>
+              <span suppressHydrationWarning>
+                {new Date(clockNow).toLocaleTimeString()}
+              </span>
             </div>
-            <button 
+            <button
               onClick={createCheckin}
               className="inline-flex items-center gap-2 rounded-lg bg-white px-4 py-2 font-medium text-red-700 shadow-sm transition hover:bg-red-50"
             >
@@ -532,37 +643,49 @@ export default function CrisisPage() {
         {runtime?.active_mode === "mock" && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-center gap-2">
             <BadgeInfo className="w-4 h-4" />
-            Running in deterministic local fallback mode. Add Gradient credentials to enable live runtime.
+            Running in deterministic local fallback mode. Add Gradient
+            credentials to enable live runtime.
           </div>
         )}
 
         <div className="surface-card shimmer-border border border-red-100 bg-white/90 p-4 backdrop-blur animate-enter stagger-1">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Runtime</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Runtime
+              </p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <Signal className="h-4 w-4 text-emerald-600" />
                 {(runtime?.active_mode || "unknown").toUpperCase()}
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Last Sync</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Last Sync
+              </p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <RefreshCcw className="h-4 w-4 text-blue-600" />
                 {syncAgeLabel}
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Position</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Position
+              </p>
               <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <LocateFixed className="h-4 w-4 text-violet-600" />
-                {userLocation ? `${userLocation.lat.toFixed(2)}, ${userLocation.lon.toFixed(2)}` : "Resolving..."}
+                {userLocation
+                  ? `${userLocation.lat.toFixed(2)}, ${userLocation.lon.toFixed(2)}`
+                  : "Resolving..."}
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Live Counters</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                Live Counters
+              </p>
               <p className="mt-1 text-sm font-semibold text-slate-900">
-                {havens.length} havens • {routes.length} routes • {nearbyRequests.length + nearbyOffers.length} matches
+                {havens.length} havens • {routes.length} routes •{" "}
+                {nearbyRequests.length + nearbyOffers.length} matches
               </p>
             </div>
           </div>
@@ -584,7 +707,7 @@ export default function CrisisPage() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr),minmax(320px,1fr)]">
             <div>
               {userLocation && (
-                <MapView 
+                <MapView
                   userLocation={userLocation}
                   havens={havens}
                   selectedHaven={selectedHaven}
@@ -601,7 +724,9 @@ export default function CrisisPage() {
                   <Activity className="h-4 w-4 text-rose-600" />
                   Live Activity Feed
                 </h3>
-                <span className="text-[11px] text-slate-500">{syncAgeLabel}</span>
+                <span className="text-[11px] text-slate-500">
+                  {syncAgeLabel}
+                </span>
               </div>
               {activityFeed.length === 0 ? (
                 <p className="rounded-md border border-dashed border-slate-300 bg-white p-3 text-xs text-slate-500">
@@ -610,14 +735,25 @@ export default function CrisisPage() {
               ) : (
                 <ul className="max-h-96 space-y-2 overflow-y-auto pr-1">
                   {activityFeed.map((item) => (
-                    <li key={item.id} className="rounded-md border border-slate-200 bg-white p-2.5">
+                    <li
+                      key={item.id}
+                      className="rounded-md border border-slate-200 bg-white p-2.5"
+                    >
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-xs font-medium text-slate-800">{item.title}</p>
-                        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${toneStyles[item.tone]}`}>
+                        <p className="text-xs font-medium text-slate-800">
+                          {item.title}
+                        </p>
+                        <span
+                          className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${toneStyles[item.tone]}`}
+                        >
                           {item.tone}
                         </span>
                       </div>
-                      {item.detail ? <p className="mt-1 text-[11px] text-slate-600">{item.detail}</p> : null}
+                      {item.detail ? (
+                        <p className="mt-1 text-[11px] text-slate-600">
+                          {item.detail}
+                        </p>
+                      ) : null}
                       <p className="mt-1 text-[10px] text-slate-400">
                         {new Date(item.timestamp).toLocaleTimeString()}
                       </p>
@@ -635,7 +771,9 @@ export default function CrisisPage() {
             <button
               onClick={() => setActiveTab("havens")}
               className={`flex-1 px-4 py-3 font-medium flex items-center justify-center gap-2 transition ${
-                activeTab === "havens" ? "bg-white text-red-700 border-b-2 border-red-600" : "text-slate-600 hover:text-slate-900"
+                activeTab === "havens"
+                  ? "bg-white text-red-700 border-b-2 border-red-600"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Shield className="w-4 h-4" />
@@ -644,7 +782,9 @@ export default function CrisisPage() {
             <button
               onClick={() => setActiveTab("routes")}
               className={`flex-1 px-4 py-3 font-medium flex items-center justify-center gap-2 transition ${
-                activeTab === "routes" ? "bg-white text-red-700 border-b-2 border-red-600" : "text-slate-600 hover:text-slate-900"
+                activeTab === "routes"
+                  ? "bg-white text-red-700 border-b-2 border-red-600"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Navigation className="w-4 h-4" />
@@ -653,7 +793,9 @@ export default function CrisisPage() {
             <button
               onClick={() => setActiveTab("reunite")}
               className={`flex-1 px-4 py-3 font-medium flex items-center justify-center gap-2 transition ${
-                activeTab === "reunite" ? "bg-white text-red-700 border-b-2 border-red-600" : "text-slate-600 hover:text-slate-900"
+                activeTab === "reunite"
+                  ? "bg-white text-red-700 border-b-2 border-red-600"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Users className="w-4 h-4" />
@@ -662,7 +804,9 @@ export default function CrisisPage() {
             <button
               onClick={() => setActiveTab("help")}
               className={`flex-1 px-4 py-3 font-medium flex items-center justify-center gap-2 transition ${
-                activeTab === "help" ? "bg-white text-red-700 border-b-2 border-red-600" : "text-slate-600 hover:text-slate-900"
+                activeTab === "help"
+                  ? "bg-white text-red-700 border-b-2 border-red-600"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <LifeBuoy className="w-4 h-4" />
@@ -671,7 +815,9 @@ export default function CrisisPage() {
             <button
               onClick={() => setActiveTab("copilot")}
               className={`flex-1 px-4 py-3 font-medium flex items-center justify-center gap-2 transition ${
-                activeTab === "copilot" ? "bg-white text-red-700 border-b-2 border-red-600" : "text-slate-600 hover:text-slate-900"
+                activeTab === "copilot"
+                  ? "bg-white text-red-700 border-b-2 border-red-600"
+                  : "text-slate-600 hover:text-slate-900"
               }`}
             >
               <Bot className="w-4 h-4" />
@@ -684,14 +830,16 @@ export default function CrisisPage() {
             {activeTab === "havens" && (
               <div className="space-y-3">
                 {loading ? (
-                  <div className="text-center py-8 text-gray-500">Loading havens...</div>
+                  <div className="text-center py-8 text-gray-500">
+                    Loading havens...
+                  </div>
                 ) : havens.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     No havens found nearby. Try expanding your search radius.
                   </div>
                 ) : (
                   havens.map((haven) => (
-                    <div 
+                    <div
                       key={haven.id}
                       className="border rounded-lg p-4 hover:shadow-md transition cursor-pointer"
                       onClick={() => generateRoutes(haven)}
@@ -699,24 +847,29 @@ export default function CrisisPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <h3 className="font-bold text-lg">{haven.name}</h3>
-                          <p className="text-sm text-gray-600">{haven.type.replace("_", " ")}</p>
+                          <p className="text-sm text-gray-600">
+                            {haven.type.replace("_", " ")}
+                          </p>
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           {getVerificationBadge(haven.verification_tier)}
                           {getCapacityBadge(haven.capacity_status)}
                         </div>
                       </div>
-                      
+
                       {haven.services && haven.services.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-2">
                           {haven.services.map((service, idx) => (
-                            <span key={idx} className="px-2 py-1 bg-gray-100 text-xs rounded">
+                            <span
+                              key={idx}
+                              className="px-2 py-1 bg-gray-100 text-xs rounded"
+                            >
                               {service}
                             </span>
                           ))}
                         </div>
                       )}
-                      
+
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <span>{haven.address || "Address not available"}</span>
                         <button className="text-red-600 font-medium hover:underline">
@@ -745,24 +898,31 @@ export default function CrisisPage() {
                         </p>
                       </div>
                     )}
-                    
+
                     {routes.map((route, idx) => (
                       <div key={idx} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between mb-3">
                           <div>
-                            <h3 className="font-bold text-lg capitalize">{route.type} Route</h3>
+                            <h3 className="font-bold text-lg capitalize">
+                              {route.type} Route
+                            </h3>
                             <p className="text-sm text-gray-600">
-                              {route.distance_km.toFixed(1)} km • {route.estimated_minutes} min
+                              {route.distance_km.toFixed(1)} km •{" "}
+                              {route.estimated_minutes} min
                             </p>
                           </div>
                           <div className="text-right">
-                            <div className={`text-2xl font-bold ${getRiskColor(route.risk_score)}`}>
+                            <div
+                              className={`text-2xl font-bold ${getRiskColor(route.risk_score)}`}
+                            >
                               {route.risk_score.toFixed(0)}
                             </div>
-                            <div className="text-xs text-gray-500">Risk Score</div>
+                            <div className="text-xs text-gray-500">
+                              Risk Score
+                            </div>
                           </div>
                         </div>
-                        
+
                         <div className="bg-gray-50 rounded p-3 mb-3">
                           <p className="text-sm font-medium mb-2 flex items-center gap-2">
                             <AlertCircle className="w-4 h-4 text-yellow-600" />
@@ -774,7 +934,7 @@ export default function CrisisPage() {
                             ))}
                           </ul>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <p className="text-sm font-medium">Instructions:</p>
                           {route.instructions.map((instruction, idx) => (
@@ -783,7 +943,7 @@ export default function CrisisPage() {
                             </p>
                           ))}
                         </div>
-                        
+
                         <button className="w-full mt-3 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition">
                           Start Navigation
                         </button>
@@ -803,13 +963,13 @@ export default function CrisisPage() {
                     <div>
                       <h3 className="font-bold mb-1">Family Reunification</h3>
                       <p className="text-sm text-gray-700">
-                        Create a beacon to share your location with family members.
-                        They can find you using a secure code.
+                        Create a beacon to share your location with family
+                        members. They can find you using a secure code.
                       </p>
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="border rounded-lg p-4">
                   <h3 className="font-bold mb-3">Create Your Beacon</h3>
                   <div className="space-y-3">
@@ -842,12 +1002,13 @@ export default function CrisisPage() {
                     </button>
                     {beaconResult && (
                       <div className="rounded bg-green-50 border border-green-200 p-3 text-sm text-green-900">
-                        Beacon created: <strong>{beaconResult.beacon_code}</strong>
+                        Beacon created:{" "}
+                        <strong>{beaconResult.beacon_code}</strong>
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="border rounded-lg p-4">
                   <h3 className="font-bold mb-3">Find Family Member</h3>
                   <div className="space-y-3">
@@ -866,9 +1027,17 @@ export default function CrisisPage() {
                     </button>
                     {beaconLookupResult && (
                       <div className="rounded bg-blue-50 border border-blue-200 p-3 text-sm text-blue-900 space-y-1">
-                        <p><strong>Status:</strong> {beaconLookupResult.status}</p>
-                        <p><strong>Location:</strong> {beaconLookupResult.lat}, {beaconLookupResult.lon}</p>
-                        <p><strong>Message:</strong> {beaconLookupResult.message || "No message"}</p>
+                        <p>
+                          <strong>Status:</strong> {beaconLookupResult.status}
+                        </p>
+                        <p>
+                          <strong>Location:</strong> {beaconLookupResult.lat},{" "}
+                          {beaconLookupResult.lon}
+                        </p>
+                        <p>
+                          <strong>Message:</strong>{" "}
+                          {beaconLookupResult.message || "No message"}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -880,7 +1049,11 @@ export default function CrisisPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-bold">Request Help</h3>
-                  <select value={helpCategory} onChange={(e) => setHelpCategory(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                  <select
+                    value={helpCategory}
+                    onChange={(e) => setHelpCategory(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
                     <option value="transport">Transport</option>
                     <option value="medical">Medical</option>
                     <option value="food">Food</option>
@@ -888,19 +1061,37 @@ export default function CrisisPage() {
                     <option value="shelter">Shelter</option>
                     <option value="charging">Charging</option>
                   </select>
-                  <select value={helpUrgency} onChange={(e) => setHelpUrgency(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                  <select
+                    value={helpUrgency}
+                    onChange={(e) => setHelpUrgency(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
                     <option value="high">High</option>
                     <option value="critical">Critical</option>
                   </select>
-                  <textarea value={helpDetails} onChange={(e) => setHelpDetails(e.target.value)} className="w-full px-3 py-2 border rounded-lg h-24 resize-none" placeholder="Describe your need..." />
-                  <button onClick={submitHelpRequest} className="w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition">Submit Request</button>
+                  <textarea
+                    value={helpDetails}
+                    onChange={(e) => setHelpDetails(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg h-24 resize-none"
+                    placeholder="Describe your need..."
+                  />
+                  <button
+                    onClick={submitHelpRequest}
+                    className="w-full bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition"
+                  >
+                    Submit Request
+                  </button>
                 </div>
 
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-bold">Offer Help</h3>
-                  <select value={offerCategory} onChange={(e) => setOfferCategory(e.target.value)} className="w-full px-3 py-2 border rounded-lg">
+                  <select
+                    value={offerCategory}
+                    onChange={(e) => setOfferCategory(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg"
+                  >
                     <option value="transport">Transport</option>
                     <option value="medical">Medical</option>
                     <option value="food">Food</option>
@@ -910,9 +1101,28 @@ export default function CrisisPage() {
                     <option value="translation">Translation</option>
                     <option value="escort">Escort</option>
                   </select>
-                  <input type="number" value={offerRadius} onChange={(e) => setOfferRadius(Number(e.target.value) || 1)} className="w-full px-3 py-2 border rounded-lg" min={1} max={100} />
-                  <textarea value={offerDetails} onChange={(e) => setOfferDetails(e.target.value)} className="w-full px-3 py-2 border rounded-lg h-24 resize-none" placeholder="What can you offer?" />
-                  <button onClick={submitHelpOffer} className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Submit Offer</button>
+                  <input
+                    type="number"
+                    value={offerRadius}
+                    onChange={(e) =>
+                      setOfferRadius(Number(e.target.value) || 1)
+                    }
+                    className="w-full px-3 py-2 border rounded-lg"
+                    min={1}
+                    max={100}
+                  />
+                  <textarea
+                    value={offerDetails}
+                    onChange={(e) => setOfferDetails(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-lg h-24 resize-none"
+                    placeholder="What can you offer?"
+                  />
+                  <button
+                    onClick={submitHelpOffer}
+                    className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
+                  >
+                    Submit Offer
+                  </button>
                 </div>
 
                 <div className="md:col-span-2 border rounded-lg p-4">
@@ -920,11 +1130,17 @@ export default function CrisisPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div>
                       <p className="font-semibold mb-1">Requests</p>
-                      {nearbyRequests.length === 0 ? <p className="text-gray-500">No nearby requests</p> : (
+                      {nearbyRequests.length === 0 ? (
+                        <p className="text-gray-500">No nearby requests</p>
+                      ) : (
                         <ul className="space-y-1">
                           {nearbyRequests.map((item) => (
-                            <li key={item.id} className="bg-gray-50 rounded px-2 py-1">
-                              {item.category} ({item.urgency}) - {item.distance_km} km
+                            <li
+                              key={item.id}
+                              className="bg-gray-50 rounded px-2 py-1"
+                            >
+                              {item.category} ({item.urgency}) -{" "}
+                              {item.distance_km} km
                             </li>
                           ))}
                         </ul>
@@ -932,10 +1148,15 @@ export default function CrisisPage() {
                     </div>
                     <div>
                       <p className="font-semibold mb-1">Offers</p>
-                      {nearbyOffers.length === 0 ? <p className="text-gray-500">No nearby offers</p> : (
+                      {nearbyOffers.length === 0 ? (
+                        <p className="text-gray-500">No nearby offers</p>
+                      ) : (
                         <ul className="space-y-1">
                           {nearbyOffers.map((item) => (
-                            <li key={item.id} className="bg-gray-50 rounded px-2 py-1">
+                            <li
+                              key={item.id}
+                              className="bg-gray-50 rounded px-2 py-1"
+                            >
                               {item.category} - {item.distance_km} km
                             </li>
                           ))}
@@ -970,17 +1191,30 @@ export default function CrisisPage() {
 
                 {copilotResponse && (
                   <div className="space-y-3">
-                    <div className="rounded border p-3 bg-gray-50 text-sm whitespace-pre-wrap">{copilotResponse}</div>
+                    <div className="rounded border p-3 bg-gray-50 text-sm whitespace-pre-wrap">
+                      {copilotResponse}
+                    </div>
                     <div className="text-xs text-gray-600">
-                      Mode: <strong>{copilotMode || runtime?.active_mode || "unknown"}</strong>
-                      {copilotTraceId ? <> | Trace: <code>{copilotTraceId}</code></> : null}
+                      Mode:{" "}
+                      <strong>
+                        {copilotMode || runtime?.active_mode || "unknown"}
+                      </strong>
+                      {copilotTraceId ? (
+                        <>
+                          {" "}
+                          | Trace: <code>{copilotTraceId}</code>
+                        </>
+                      ) : null}
                     </div>
                     {copilotToolCalls.length > 0 && (
                       <div className="rounded border p-3">
                         <p className="font-semibold text-sm mb-2">Tool Calls</p>
                         <ul className="space-y-1 text-xs text-gray-700">
                           {copilotToolCalls.map((call, idx) => (
-                            <li key={idx} className="bg-gray-50 rounded px-2 py-1">
+                            <li
+                              key={idx}
+                              className="bg-gray-50 rounded px-2 py-1"
+                            >
                               {call.agent} → {call.tool}: {call.output_summary}
                             </li>
                           ))}
@@ -1001,8 +1235,9 @@ export default function CrisisPage() {
             <div>
               <h3 className="font-bold text-red-900 mb-1">Emergency</h3>
               <p className="text-sm text-red-800">
-                For immediate life-threatening situations, call local emergency services first.
-                Then update your status in the app to alert your network.
+                For immediate life-threatening situations, call local emergency
+                services first. Then update your status in the app to alert your
+                network.
               </p>
             </div>
           </div>

@@ -1,11 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { Shield, MapPin, Navigation, Users, Heart, AlertCircle, CheckCircle2, Radio, Zap } from "lucide-react";
+import {
+  Shield,
+  MapPin,
+  Navigation,
+  Users,
+  Heart,
+  AlertCircle,
+  CheckCircle2,
+  Radio,
+  Zap,
+} from "lucide-react";
 import { LiveRuntimeCard } from "../components/LiveRuntimeCard";
 
 export default function CrisisHomePage() {
-  const repoUrl = process.env.NEXT_PUBLIC_REPO_URL || "https://github.com/samalpartha/LifeBridge";
+  const repoUrl =
+    process.env.NEXT_PUBLIC_REPO_URL ||
+    "https://github.com/samalpartha/LifeBridge";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-blue-50">
@@ -21,8 +33,8 @@ export default function CrisisHomePage() {
               LifeBridge Crisis Corridor
             </h1>
             <p className="text-2xl sm:text-3xl mb-8 text-red-100 max-w-3xl mx-auto">
-              Get stranded civilians to verified safe havens with risk-aware routes, 
-              offline support, and family reunification.
+              Get stranded civilians to verified safe havens with risk-aware
+              routes, offline support, and family reunification.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
@@ -45,7 +57,7 @@ export default function CrisisHomePage() {
                 Learn How It Works
               </a>
             </div>
-            
+
             <div className="mt-12 flex items-center justify-center gap-8 text-sm text-red-100">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5" />
@@ -67,22 +79,36 @@ export default function CrisisHomePage() {
             <div>
               <div className="text-4xl font-bold text-red-600 mb-2">3</div>
               <div className="text-gray-600">Route Options</div>
-              <div className="text-sm text-gray-500 mt-1">Fastest, Safest, Accessible</div>
+              <div className="text-sm text-gray-500 mt-1">
+                Fastest, Safest, Accessible
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">Real-time</div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                Real-time
+              </div>
               <div className="text-gray-600">Haven Verification</div>
-              <div className="text-sm text-gray-500 mt-1">Official, Verified, Community</div>
+              <div className="text-sm text-gray-500 mt-1">
+                Official, Verified, Community
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-green-600 mb-2">Offline</div>
+              <div className="text-4xl font-bold text-green-600 mb-2">
+                Offline
+              </div>
               <div className="text-gray-600">Survival Mode</div>
-              <div className="text-sm text-gray-500 mt-1">Works without connectivity</div>
+              <div className="text-sm text-gray-500 mt-1">
+                Works without connectivity
+              </div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-purple-600 mb-2">Family</div>
+              <div className="text-4xl font-bold text-purple-600 mb-2">
+                Family
+              </div>
               <div className="text-gray-600">Reunification</div>
-              <div className="text-sm text-gray-500 mt-1">Secure beacon codes</div>
+              <div className="text-sm text-gray-500 mt-1">
+                Secure beacon codes
+              </div>
             </div>
           </div>
         </div>
@@ -111,8 +137,8 @@ export default function CrisisHomePage() {
             </div>
             <h3 className="text-xl font-bold mb-3">Safe Haven Finder</h3>
             <p className="text-gray-600 mb-4">
-              Discover verified shelters, hospitals, embassies, and aid stations nearby.
-              See services, capacity, and last verification time.
+              Discover verified shelters, hospitals, embassies, and aid stations
+              nearby. See services, capacity, and last verification time.
             </p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>✓ 3-tier verification system</li>
@@ -128,7 +154,8 @@ export default function CrisisHomePage() {
             </div>
             <h3 className="text-xl font-bold mb-3">Risk-Aware Routing</h3>
             <p className="text-gray-600 mb-4">
-              Get 3 route options with clear risk assessments and safety recommendations.
+              Get 3 route options with clear risk assessments and safety
+              recommendations.
             </p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>✓ Fastest route option</li>
@@ -176,7 +203,8 @@ export default function CrisisHomePage() {
             </div>
             <h3 className="text-xl font-bold mb-3">Help Request Matching</h3>
             <p className="text-gray-600 mb-4">
-              Request or offer help. Get matched with nearby assistance automatically.
+              Request or offer help. Get matched with nearby assistance
+              automatically.
             </p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>✓ Transport, medical, supplies</li>
@@ -192,7 +220,8 @@ export default function CrisisHomePage() {
             </div>
             <h3 className="text-xl font-bold mb-3">AI-Powered Copilot</h3>
             <p className="text-gray-600 mb-4">
-              RescueOps Copilot provides personalized safety guidance using Gradient AI.
+              RescueOps Copilot provides personalized safety guidance using
+              Gradient AI.
             </p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li>✓ Context-aware recommendations</li>
@@ -211,60 +240,89 @@ export default function CrisisHomePage() {
               Powered by DigitalOcean Gradient AI
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-              Built for the DigitalOcean Gradient AI Hackathon, showcasing full-stack AI features
+              Built for the DigitalOcean Gradient AI Hackathon, showcasing
+              full-stack AI features
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-xl font-bold mb-3">🤖 RescueOps Copilot Agent</h3>
+              <h3 className="text-xl font-bold mb-3">
+                🤖 RescueOps Copilot Agent
+              </h3>
               <p className="text-gray-300 mb-4">
-                AI agent with humanitarian mission and strict safety rules. 
+                AI agent with humanitarian mission and strict safety rules.
                 Orchestrates haven search, route scoring, and check-ins.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Agent Orchestration</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Tool Calling</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Context Awareness</span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Agent Orchestration
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Tool Calling
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Context Awareness
+                </span>
               </div>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-xl font-bold mb-3">📚 Crisis Knowledge Base</h3>
+              <h3 className="text-xl font-bold mb-3">
+                📚 Crisis Knowledge Base
+              </h3>
               <p className="text-gray-300 mb-4">
-                Ingested FAQs, haven verification playbook, and safety protocols 
+                Ingested FAQs, haven verification playbook, and safety protocols
                 for real-time retrieval and recommendations.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Vector Search</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">RAG Pipeline</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Source Attribution</span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Vector Search
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  RAG Pipeline
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Source Attribution
+                </span>
               </div>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-xl font-bold mb-3">✅ Evaluation Suite</h3>
               <p className="text-gray-300 mb-4">
-                Automated testing with crisis scenarios: children, wheelchair access, 
-                night travel. Quality scores tracked.
+                Automated testing with crisis scenarios: children, wheelchair
+                access, night travel. Quality scores tracked.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Test Scenarios</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Quality Metrics</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Continuous Eval</span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Test Scenarios
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Quality Metrics
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Continuous Eval
+                </span>
               </div>
             </div>
 
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-xl font-bold mb-3">🔍 Trace Logging</h3>
               <p className="text-gray-300 mb-4">
-                Full transparency on agent decisions. View sources, tool calls, 
+                Full transparency on agent decisions. View sources, tool calls,
                 and confidence scores for every recommendation.
               </p>
               <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Audit Trail</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Explainability</span>
-                <span className="px-3 py-1 bg-gray-700 rounded text-sm">Trust & Safety</span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Audit Trail
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Explainability
+                </span>
+                <span className="px-3 py-1 bg-gray-700 rounded text-sm">
+                  Trust & Safety
+                </span>
               </div>
             </div>
           </div>
@@ -278,8 +336,8 @@ export default function CrisisHomePage() {
             Ready to Navigate to Safety?
           </h2>
           <p className="text-xl mb-8 text-red-100 max-w-2xl mx-auto">
-            Start using LifeBridge Crisis Corridor to find safe havens, 
-            reunite with family, and navigate crises with confidence.
+            Start using LifeBridge Crisis Corridor to find safe havens, reunite
+            with family, and navigate crises with confidence.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
@@ -308,7 +366,8 @@ export default function CrisisHomePage() {
             Built for the <strong>DigitalOcean Gradient AI Hackathon</strong>
           </p>
           <p className="text-sm">
-            Competing for: Best Program for the People • Best AI Agent Persona • Grand Prize
+            Competing for: Best Program for the People • Best AI Agent Persona •
+            Grand Prize
           </p>
         </div>
       </div>

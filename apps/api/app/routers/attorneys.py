@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, HTTPException, Query
+
 from ..schemas.attorney import AttorneySearchResponse
 from ..services.attorneys import attorney_service
 
@@ -15,5 +16,5 @@ async def search_attorneys(
     """
     if not zip_code and not query:
          raise HTTPException(status_code=400, detail="Must provide either ZIP code or search query")
-    
+
     return await attorney_service.search(zip_code=zip_code, query=query)

@@ -1,11 +1,12 @@
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List
-from ..schemas.knowledge import KnowledgeTopic, KnowledgeContent
+
+from ..schemas.knowledge import KnowledgeContent, KnowledgeTopic
 from ..services.knowledge import KnowledgeService, get_knowledge_service
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
-@router.get("/topics", response_model=List[KnowledgeTopic])
+@router.get("/topics", response_model=list[KnowledgeTopic])
 async def get_topics(
     service: KnowledgeService = Depends(get_knowledge_service)
 ):

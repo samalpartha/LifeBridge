@@ -1,260 +1,340 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Folder, Calendar, Clock, ChevronRight, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Folder,
+  Calendar,
+  Clock,
+  ChevronRight,
+  Trash2,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import { trackerApi, CaseEntry } from "@/features/tracker/api/client";
 import Link from "next/link";
 
 export default function CasesPage() {
-    const [cases, setCases] = useState<CaseEntry[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [loadError, setLoadError] = useState<string | null>(null);
+  const [cases, setCases] = useState<CaseEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-    const [newItem, setNewItem] = useState<CaseEntry>({
+  const [newItem, setNewItem] = useState<CaseEntry>({
+    title: "",
+    case_type: "I-130",
+    status: "Open",
+    filing_date: "",
+    priority_date: "",
+    receipt_number: "",
+  });
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  async function loadData() {
+    try {
+      setLoading(true);
+      setLoadError(null);
+      const data = await trackerApi.getCases();
+      setCases(data);
+    } catch (error: any) {
+      setCases([]);
+      const message = error?.message || "Failed to fetch cases";
+      setLoadError(message);
+      toast.error("Cases service unavailable. Please retry.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSave() {
+    if (!newItem.title) return;
+    try {
+      // Sanitize empty strings to undefined to avoid backend validation errors (pydantic date parsing)
+      const payload = {
+        ...newItem,
+        filing_date: newItem.filing_date || undefined,
+        priority_date: newItem.priority_date || undefined,
+        receipt_number: newItem.receipt_number || undefined,
+      };
+
+      await trackerApi.addCase(payload);
+      setIsModalOpen(false);
+      setNewItem({
         title: "",
         case_type: "I-130",
         status: "Open",
         filing_date: "",
         priority_date: "",
-        receipt_number: ""
-    });
-
-    useEffect(() => {
-        loadData();
-    }, []);
-
-    async function loadData() {
-        try {
-            setLoading(true);
-            setLoadError(null);
-            const data = await trackerApi.getCases();
-            setCases(data);
-        } catch (error: any) {
-            setCases([]);
-            const message = error?.message || "Failed to fetch cases";
-            setLoadError(message);
-            toast.error("Cases service unavailable. Please retry.");
-        } finally {
-            setLoading(false);
-        }
+        receipt_number: "",
+      });
+      loadData();
+    } catch {
+      alert("Failed to add case");
     }
+  }
 
-    async function handleSave() {
-        if (!newItem.title) return;
-        try {
-            // Sanitize empty strings to undefined to avoid backend validation errors (pydantic date parsing)
-            const payload = {
-                ...newItem,
-                filing_date: newItem.filing_date || undefined,
-                priority_date: newItem.priority_date || undefined,
-                receipt_number: newItem.receipt_number || undefined
-            };
+  const handleDelete = async (e: React.MouseEvent, id: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this case?")) return;
 
-            await trackerApi.addCase(payload);
-            setIsModalOpen(false);
-            setNewItem({ title: "", case_type: "I-130", status: "Open", filing_date: "", priority_date: "", receipt_number: "" });
-            loadData();
-        } catch {
-            alert("Failed to add case");
-        }
+    try {
+      await trackerApi.deleteCase(id);
+      setCases(cases.filter((c) => c.id !== id));
+      toast.success("Case deleted");
+    } catch (error) {
+      toast.error("Failed to delete case");
     }
+  };
 
-    const handleDelete = async (e: React.MouseEvent, id: number) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this case?")) return;
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "open":
+        return "bg-green-100 text-green-700";
+      case "pending":
+        return "bg-yellow-100 text-yellow-700";
+      case "closed":
+        return "bg-gray-100 text-gray-700";
+      default:
+        return "bg-blue-100 text-blue-700";
+    }
+  };
 
-        try {
-            await trackerApi.deleteCase(id);
-            setCases(cases.filter(c => c.id !== id));
-            toast.success("Case deleted");
-        } catch (error) {
-            toast.error("Failed to delete case");
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'open': return 'bg-green-100 text-green-700';
-            case 'pending': return 'bg-yellow-100 text-yellow-700';
-            case 'closed': return 'bg-gray-100 text-gray-700';
-            default: return 'bg-blue-100 text-blue-700';
-        }
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-7xl mx-auto space-y-8">
-
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">My Cases</h1>
-                        <p className="text-gray-500 mt-1">Manage your immigration petitions and applications.</p>
-                    </div>
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
-                    >
-                        <Plus size={18} />
-                        New Case
-                    </button>
-                </div>
-
-                {loading ? (
-                    <div className="text-center py-12 text-gray-500">Loading cases...</div>
-                ) : loadError ? (
-                    <div className="text-center py-12 bg-white rounded-xl border border-amber-200 shadow-sm px-6">
-                        <Folder className="mx-auto h-12 w-12 text-amber-300" />
-                        <h3 className="mt-2 text-sm font-semibold text-amber-900">Case service is unavailable</h3>
-                        <p className="mt-1 text-sm text-amber-700">
-                            {loadError}
-                        </p>
-                        <button
-                            onClick={() => void loadData()}
-                            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition"
-                        >
-                            Retry
-                        </button>
-                    </div>
-                ) : cases.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
-                        <Folder className="mx-auto h-12 w-12 text-gray-300" />
-                        <h3 className="mt-2 text-sm font-medium text-gray-900">No cases found</h3>
-                        <p className="mt-1 text-sm text-gray-500">Get started by creating a new case.</p>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 gap-6">
-                        {cases.map((c) => (
-                            <Link key={c.id} href={`/tracker/cases/${c.id}`}>
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition cursor-pointer flex justify-between items-center group">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                                            <Folder size={24} />
-                                        </div>
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition">{c.title}</h3>
-                                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                                <span className="font-medium text-gray-700">{c.case_type}</span>
-                                                {c.filing_date && (
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar size={14} /> Filed: {c.filing_date}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-6">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-medium uppercase ${getStatusColor(c.status)}`}>
-                                            {c.status}
-                                        </span>
-                                        <button
-                                            onClick={(e) => c.id && handleDelete(e, c.id)}
-                                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"
-                                            title="Delete Case"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
-                                        <ChevronRight className="text-gray-300 group-hover:text-blue-500 transition" />
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-
-                {/* Modal */}
-                {isModalOpen && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
-                            <h2 className="text-xl font-bold mb-4">Create New Case</h2>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Case Title</label>
-                                    <input
-                                        className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                                        value={newItem.title}
-                                        onChange={e => setNewItem({ ...newItem, title: e.target.value })}
-                                        placeholder="e.g. Spouse Visa Application"
-                                        autoFocus
-                                    />
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                                        <select
-                                            className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                            value={newItem.case_type}
-                                            onChange={e => setNewItem({ ...newItem, case_type: e.target.value })}
-                                        >
-                                            <option value="I-130 (Petition for Alien Relative)">I-130 (Petition for Alien Relative)</option>
-                                            <option value="I-140 (Immigrant Petition for Alien Worker)">I-140 (Immigrant Petition for Alien Worker)</option>
-                                            <option value="I-485 (Adjustment of Status)">I-485 (Adjustment of Status)</option>
-                                            <option value="I-765 (Employment Authorization)">I-765 (Employment Authorization)</option>
-                                            <option value="I-90 (Application to Replace Permanent Resident Card)">I-90 (Application to Replace Permanent Resident Card)</option>
-                                            <option value="I-129 (Petition for a Nonimmigrant Worker)">I-129 (Petition for a Nonimmigrant Worker)</option>
-                                            <option value="I-129F (Petition for Alien Fiancé(e))">I-129F (Petition for Alien Fiancé(e))</option>
-                                            <option value="I-131 (Application for Travel Document)">I-131 (Application for Travel Document)</option>
-                                            <option value="I-539 (Application to Extend/Change Nonimmigrant Status)">I-539 (Application to Extend/Change Nonimmigrant Status)</option>
-                                            <option value="I-751 (Petition to Remove Conditions on Residence)">I-751 (Petition to Remove Conditions on Residence)</option>
-                                            <option value="N-400 (Application for Naturalization)">N-400 (Application for Naturalization)</option>
-                                            <option value="K-1 (Fiancé(e) Visa)">K-1 (Fiancé(e) Visa)</option>
-                                            <option value="B-1/B-2 (Visitor Visa)">B-1/B-2 (Visitor Visa)</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Number</label>
-                                        <input
-                                            className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-                                            value={newItem.receipt_number || ""}
-                                            onChange={e => setNewItem({ ...newItem, receipt_number: e.target.value })}
-                                            placeholder="e.g. IOE..."
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                        <select
-                                            className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                                            value={newItem.status}
-                                            onChange={e => setNewItem({ ...newItem, status: e.target.value })}
-                                        >
-                                            <option value="Open">Open</option>
-                                            <option value="Pending">Pending</option>
-                                            <option value="Closed">Closed</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Filing Date (Optional)</label>
-                                    <input
-                                        type="date"
-                                        className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                                        value={newItem.filing_date}
-                                        onChange={e => setNewItem({ ...newItem, filing_date: e.target.value })}
-                                    />
-                                </div>
-                                <div className="flex justify-end gap-3 mt-6">
-                                    <button
-                                        onClick={() => setIsModalOpen(false)}
-                                        className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-                                    >
-                                        Cancel
-                                    </button>
-                                    <button
-                                        onClick={handleSave}
-                                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                                    >
-                                        Create Case
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Cases</h1>
+            <p className="text-gray-500 mt-1">
+              Manage your immigration petitions and applications.
+            </p>
+          </div>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            <Plus size={18} />
+            New Case
+          </button>
         </div>
-    );
+
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">
+            Loading cases...
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-amber-200 shadow-sm px-6">
+            <Folder className="mx-auto h-12 w-12 text-amber-300" />
+            <h3 className="mt-2 text-sm font-semibold text-amber-900">
+              Case service is unavailable
+            </h3>
+            <p className="mt-1 text-sm text-amber-700">{loadError}</p>
+            <button
+              onClick={() => void loadData()}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition"
+            >
+              Retry
+            </button>
+          </div>
+        ) : cases.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
+            <Folder className="mx-auto h-12 w-12 text-gray-300" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              No cases found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Get started by creating a new case.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {cases.map((c) => (
+              <Link key={c.id} href={`/tracker/cases/${c.id}`}>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition cursor-pointer flex justify-between items-center group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                      <Folder size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition">
+                        {c.title}
+                      </h3>
+                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                        <span className="font-medium text-gray-700">
+                          {c.case_type}
+                        </span>
+                        {c.filing_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar size={14} /> Filed: {c.filing_date}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-6">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium uppercase ${getStatusColor(c.status)}`}
+                    >
+                      {c.status}
+                    </span>
+                    <button
+                      onClick={(e) => c.id && handleDelete(e, c.id)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                      title="Delete Case"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                    <ChevronRight className="text-gray-300 group-hover:text-blue-500 transition" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl">
+              <h2 className="text-xl font-bold mb-4">Create New Case</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Case Title
+                  </label>
+                  <input
+                    className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newItem.title}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, title: e.target.value })
+                    }
+                    placeholder="e.g. Spouse Visa Application"
+                    autoFocus
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={newItem.case_type}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, case_type: e.target.value })
+                      }
+                    >
+                      <option value="I-130 (Petition for Alien Relative)">
+                        I-130 (Petition for Alien Relative)
+                      </option>
+                      <option value="I-140 (Immigrant Petition for Alien Worker)">
+                        I-140 (Immigrant Petition for Alien Worker)
+                      </option>
+                      <option value="I-485 (Adjustment of Status)">
+                        I-485 (Adjustment of Status)
+                      </option>
+                      <option value="I-765 (Employment Authorization)">
+                        I-765 (Employment Authorization)
+                      </option>
+                      <option value="I-90 (Application to Replace Permanent Resident Card)">
+                        I-90 (Application to Replace Permanent Resident Card)
+                      </option>
+                      <option value="I-129 (Petition for a Nonimmigrant Worker)">
+                        I-129 (Petition for a Nonimmigrant Worker)
+                      </option>
+                      <option value="I-129F (Petition for Alien Fiancé(e))">
+                        I-129F (Petition for Alien Fiancé(e))
+                      </option>
+                      <option value="I-131 (Application for Travel Document)">
+                        I-131 (Application for Travel Document)
+                      </option>
+                      <option value="I-539 (Application to Extend/Change Nonimmigrant Status)">
+                        I-539 (Application to Extend/Change Nonimmigrant Status)
+                      </option>
+                      <option value="I-751 (Petition to Remove Conditions on Residence)">
+                        I-751 (Petition to Remove Conditions on Residence)
+                      </option>
+                      <option value="N-400 (Application for Naturalization)">
+                        N-400 (Application for Naturalization)
+                      </option>
+                      <option value="K-1 (Fiancé(e) Visa)">
+                        K-1 (Fiancé(e) Visa)
+                      </option>
+                      <option value="B-1/B-2 (Visitor Visa)">
+                        B-1/B-2 (Visitor Visa)
+                      </option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Receipt Number
+                    </label>
+                    <input
+                      className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                      value={newItem.receipt_number || ""}
+                      onChange={(e) =>
+                        setNewItem({
+                          ...newItem,
+                          receipt_number: e.target.value,
+                        })
+                      }
+                      placeholder="e.g. IOE..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Status
+                    </label>
+                    <select
+                      className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      value={newItem.status}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, status: e.target.value })
+                      }
+                    >
+                      <option value="Open">Open</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Filing Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full p-2 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newItem.filing_date}
+                    onChange={(e) =>
+                      setNewItem({ ...newItem, filing_date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Create Case
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from .session import engine
 from .models import Base
+from .session import engine
 
 
 def init_db() -> None:

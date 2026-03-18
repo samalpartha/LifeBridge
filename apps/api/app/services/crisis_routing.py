@@ -1,9 +1,7 @@
 """Risk-aware routing service for crisis navigation."""
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
-from typing import List, Tuple
 
 from geopy.distance import geodesic
 
@@ -19,9 +17,9 @@ class RouteOption:
     distance_km: float
     estimated_minutes: int
     risk_score: float  # 0-100, lower is safer
-    risk_reasons: List[str]
-    waypoints: List[Tuple[float, float]]
-    instructions: List[str]
+    risk_reasons: list[str]
+    waypoints: list[tuple[float, float]]
+    instructions: list[str]
 
 
 def calculate_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -41,22 +39,22 @@ def estimate_travel_time(distance_km: float, mode: str) -> int:
 
 
 def assess_route_risk(
-    start: Tuple[float, float],
-    end: Tuple[float, float],
+    start: tuple[float, float],
+    end: tuple[float, float],
     mode: str,
     time_of_day: str,
-    user_constraints: List[str] | None = None,
-) -> Tuple[float, List[str]]:
+    user_constraints: list[str] | None = None,
+) -> tuple[float, list[str]]:
     """Assess risk score and reasons for a route.
-    
+
     Returns:
         (risk_score, risk_reasons) where risk_score is 0-100
     """
     risk_score = 0.0
     reasons = []
-    
+
     distance_km = calculate_distance_km(start[0], start[1], end[0], end[1])
-    
+
     # Distance risk
     if distance_km > 20:
         risk_score += 20
@@ -64,17 +62,17 @@ def assess_route_risk(
     elif distance_km > 10:
         risk_score += 10
         reasons.append(f"Moderate distance ({distance_km:.1f}km)")
-    
+
     # Time of day risk
     if time_of_day in ["night", "evening"]:
         risk_score += 25
         reasons.append("Night/evening travel: reduced visibility and increased hazards")
-    
+
     # Mode-specific risks
     if mode == "walking" and distance_km > 10:
         risk_score += 15
         reasons.append("Walking long distance increases fatigue and vulnerability")
-    
+
     # User constraint risks
     if user_constraints:
         if "children" in user_constraints:
@@ -86,13 +84,13 @@ def assess_route_risk(
         if "no_vehicle" in user_constraints and distance_km > 5:
             risk_score += 10
             reasons.append("No vehicle available for longer journey")
-    
+
     # Cap at 100
     risk_score = min(risk_score, 100)
-    
+
     if not reasons:
         reasons.append("Route appears safe based on available information")
-    
+
     return risk_score, reasons
 
 
@@ -103,20 +101,20 @@ def generate_route_options(
     end_lon: float,
     mode: str = "walking",
     time_of_day: str = "day",
-    user_constraints: List[str] | None = None,
-) -> List[RouteOption]:
+    user_constraints: list[str] | None = None,
+) -> list[RouteOption]:
     """Generate 3 route options: fastest, safest, accessible.
-    
+
     Note: This is a simplified implementation for the hackathon.
     Production would integrate a real routing engine (OSRM, Google Maps, etc.)
     """
     start = (start_lat, start_lon)
     end = (end_lat, end_lon)
     distance_km = calculate_distance_km(start_lat, start_lon, end_lat, end_lon)
-    
+
     # Generate 3 route variants
     routes = []
-    
+
     # Route 1: FASTEST
     fastest_time = estimate_travel_time(distance_km, mode)
     fastest_risk, fastest_reasons = assess_route_risk(
@@ -136,7 +134,7 @@ def generate_route_options(
             f"Estimated time: {fastest_time} minutes",
         ],
     ))
-    
+
     # Route 2: SAFEST (longer but lower risk)
     safer_distance = distance_km * 1.2  # 20% longer
     safer_time = estimate_travel_time(safer_distance, mode)
@@ -160,7 +158,7 @@ def generate_route_options(
             f"Estimated time: {safer_time} minutes",
         ],
     ))
-    
+
     # Route 3: ACCESSIBLE (optimized for mobility needs)
     accessible_distance = distance_km * 1.15  # 15% longer
     accessible_time = estimate_travel_time(accessible_distance, mode)
@@ -185,7 +183,7 @@ def generate_route_options(
             f"Estimated time: {accessible_time} minutes",
         ],
     ))
-    
+
     logger.info(
         "routes_generated",
         start=start,
@@ -193,5 +191,5 @@ def generate_route_options(
         mode=mode,
         routes=len(routes),
     )
-    
+
     return routes

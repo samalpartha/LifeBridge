@@ -3,35 +3,44 @@ from __future__ import annotations
 import os
 import time
 import uuid
-from typing import Any, Generator, List
+from collections.abc import Generator
+from typing import Any
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from .api import crisis
+from .core.config import settings
 from .db.init_db import init_db
 from .db.models import Case, ChecklistItem, Chunk, Document, Risk, TimelineItem
 from .db.session import SessionLocal, engine
+from .routers import attorneys, knowledge
 from .schemas.case import (
     CaseCreate,
     CaseOut,
+    CaseUpdateStory,
     ChecklistItemOut,
-    ChunkOut,
+    DocumentOut,
     RiskOut,
     TimelineItemOut,
-    CaseUpdateStory,
-    DocumentOut,
 )
-from pydantic import BaseModel
+from .services.export import export_case_json, export_case_markdown
 from .services.extract import extract_text
+from .services.gradient_ai import gradient_service
 from .services.reason import build_reasoning
 from .services.storage import get_store
-from .services.export import export_case_json, export_case_markdown
-from .services.gradient_ai import gradient_service
-from .core.config import settings
-from .routers import knowledge, attorneys
-from .api import crisis
 from .utils.logger import configure_logging, get_logger
 
 # Configure logging
@@ -73,18 +82,18 @@ app.add_middleware(
 async def log_requests(request: Request, call_next):
     """Log all requests with timing information."""
     start_time = time.time()
-    
+
     logger.info(
         "request_started",
         method=request.method,
         path=request.url.path,
         client=request.client.host if request.client else None,
     )
-    
+
     try:
         response = await call_next(request)
         process_time = time.time() - start_time
-        
+
         logger.info(
             "request_completed",
             method=request.method,
@@ -92,7 +101,7 @@ async def log_requests(request: Request, call_next):
             status_code=response.status_code,
             duration_ms=round(process_time * 1000, 2),
         )
-        
+
         response.headers["X-Process-Time"] = str(process_time)
         return response
     except Exception as e:
@@ -135,7 +144,7 @@ async def _startup() -> None:
     try:
         init_db()
         logger.info("database_initialized")
-        
+
         # Test storage connection
         store = get_store()
         logger.info("storage_initialized", store_type=type(store).__name__)
@@ -143,7 +152,7 @@ async def _startup() -> None:
         # Initialize Gradient runtime (live or deterministic fallback)
         await gradient_service.bootstrap()
         logger.info("gradient_runtime_ready", **gradient_service.get_runtime_status())
-        
+
         logger.info("application_ready")
     except Exception as e:
         logger.error("startup_failed", error=str(e), exc_info=True)
@@ -168,20 +177,20 @@ def health() -> dict:
     except Exception as e:
         logger.error("health_check_db_failed", error=str(e))
         db_status = "unhealthy"
-    
+
     try:
         # Check storage
-        store = get_store()
+        get_store()
         storage_status = "healthy"
     except Exception as e:
         logger.error("health_check_storage_failed", error=str(e))
         storage_status = "unhealthy"
 
     gradient_status = gradient_service.get_runtime_status()
-    
+
     is_healthy = db_status == "healthy" and storage_status == "healthy"
     status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
-    
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -203,11 +212,11 @@ def create_case(payload: CaseCreate, db: Session = Depends(get_db)) -> CaseOut:
     try:
         case_id = str(uuid.uuid4())
         logger.info("creating_case", case_id=case_id, title=payload.title, scenario=payload.scenario)
-        
+
         case = Case(id=case_id, title=payload.title, scenario=payload.scenario, summary="")
         db.add(case)
         db.commit()
-        
+
         logger.info("case_created", case_id=case_id)
         return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary)
     except Exception as e:
@@ -216,14 +225,14 @@ def create_case(payload: CaseCreate, db: Session = Depends(get_db)) -> CaseOut:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create case. Please try again.",
-        )
+        ) from e
 
 
 @app.get("/cases/{case_id}", response_model=CaseOut)
 def get_case(case_id: str, db: Session = Depends(get_db)) -> CaseOut:
     """Get details of a specific case."""
     logger.info("fetching_case", case_id=case_id)
-    
+
     case = db.get(Case, case_id)
     if not case:
         logger.warning("case_not_found", case_id=case_id)
@@ -231,7 +240,7 @@ def get_case(case_id: str, db: Session = Depends(get_db)) -> CaseOut:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     logger.info("case_fetched", case_id=case_id)
     return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary, user_story=case.user_story)
 
@@ -242,7 +251,7 @@ def update_case_story(case_id: str, payload: CaseUpdateStory, db: Session = Depe
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-    
+
     case.user_story = payload.user_story
     db.commit()
     return CaseOut(id=case.id, title=case.title, scenario=case.scenario, summary=case.summary, user_story=case.user_story)
@@ -261,7 +270,7 @@ def upload_document(
         filename=file.filename,
         content_type=file.content_type,
     )
-    
+
     # Validate case exists
     case = db.get(Case, case_id)
     if not case:
@@ -270,7 +279,7 @@ def upload_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     # Validate file type
     allowed_types = ["application/pdf", "image/png", "image/jpeg", "image/jpg"]
     if file.content_type and file.content_type not in allowed_types:
@@ -283,20 +292,20 @@ def upload_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported file type: {file.content_type}. Allowed types: {', '.join(allowed_types)}",
         )
-    
+
     try:
         # Read file data
         data = file.file.read()
         file_size_mb = len(data) / (1024 * 1024)
         logger.info("file_read", case_id=case_id, size_mb=round(file_size_mb, 2))
-        
+
         # Validate file size (10MB limit)
         if len(data) > 10 * 1024 * 1024:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="File size exceeds 10MB limit",
             )
-        
+
         # Store file
         store = get_store()
         stored = store.put(
@@ -305,7 +314,7 @@ def upload_document(
             content_type=file.content_type or "application/octet-stream",
         )
         logger.info("file_stored", case_id=case_id, storage_key=stored.key)
-        
+
         # Create document record
         doc_id = str(uuid.uuid4())
         doc = Document(
@@ -316,7 +325,7 @@ def upload_document(
             storage_key=stored.key,
         )
         db.add(doc)
-        
+
         # Extract text
         logger.info("extracting_text", case_id=case_id, document_id=doc_id)
         extracted = extract_text(file.content_type or "", data)
@@ -327,7 +336,7 @@ def upload_document(
             chunks=len(extracted.chunks),
             text_length=len(extracted.full_text),
         )
-        
+
         # Store chunks
         for idx, chunk_text in enumerate(extracted.chunks):
             c = Chunk(
@@ -338,16 +347,16 @@ def upload_document(
                 text=chunk_text,
             )
             db.add(c)
-        
+
         db.commit()
-        
+
         logger.info(
             "document_upload_completed",
             case_id=case_id,
             document_id=doc_id,
             chunks=len(extracted.chunks),
         )
-        
+
         return {
             "document_id": doc_id,
             "chunks": len(extracted.chunks),
@@ -368,19 +377,19 @@ def upload_document(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to process document. Please try again.",
-        )
+        ) from e
 
 
-@app.get("/cases/{case_id}/documents", response_model=List[DocumentOut])
-def list_case_documents(case_id: str, db: Session = Depends(get_db)) -> List[DocumentOut]:
+@app.get("/cases/{case_id}/documents", response_model=list[DocumentOut])
+def list_case_documents(case_id: str, db: Session = Depends(get_db)) -> list[DocumentOut]:
     """List documents for a specific case."""
     logger.info("listing_case_documents", case_id=case_id)
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
-        
+
     docs = db.query(Document).filter(Document.case_id == case_id).order_by(Document.created_at.desc()).all()
-    
+
     return [
         DocumentOut(
             id=d.id,
@@ -396,7 +405,7 @@ def list_case_documents(case_id: str, db: Session = Depends(get_db)) -> List[Doc
 def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
     """Analyze case documents and generate outputs."""
     logger.info("analysis_started", case_id=case_id)
-    
+
     # Validate case exists
     case = db.get(Case, case_id)
     if not case:
@@ -405,7 +414,7 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     try:
         # Clear prior outputs to keep runs deterministic
         deleted_checklist = db.query(ChecklistItem).filter(ChecklistItem.case_id == case_id).delete()
@@ -418,19 +427,19 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
             timeline=deleted_timeline,
             risks=deleted_risks,
         )
-        
+
         # Load chunks
         chunks = db.query(Chunk).filter(Chunk.case_id == case_id).order_by(Chunk.idx.asc()).all()
-        chunk_texts: List[str] = [c.text for c in chunks]
+        chunk_texts: list[str] = [c.text for c in chunks]
         logger.info("chunks_loaded", case_id=case_id, count=len(chunks))
-        
+
         if not chunks and not case.user_story:
             logger.warning("no_content_found", case_id=case_id)
             return {
                 "ok": True,
                 "warning": "No documents uploaded or story provided yet.",
             }
-        
+
         # Run reasoning
         logger.info("running_reasoning", case_id=case_id, scenario=case.scenario)
         rr = build_reasoning(case.scenario, chunk_texts, user_story=case.user_story or "")
@@ -442,7 +451,7 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
             timeline_items=len(rr.timeline),
             risk_items=len(rr.risks),
         )
-        
+
         # Persist outputs with evidence chunk IDs
         for item in rr.checklist:
             ids = [chunks[i].id for i in item.evidence_idx if i < len(chunks)]
@@ -456,7 +465,7 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
                     evidence_chunk_ids=",".join(ids),
                 )
             )
-        
+
         for item in rr.timeline:
             ids = [chunks[i].id for i in item.evidence_idx if i < len(chunks)]
             db.add(
@@ -470,7 +479,7 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
                     evidence_chunk_ids=",".join(ids),
                 )
             )
-        
+
         for item in rr.risks:
             ids = [chunks[i].id for i in item.evidence_idx if i < len(chunks)]
             db.add(
@@ -484,9 +493,9 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
                     evidence_chunk_ids=",".join(ids),
                 )
             )
-        
+
         db.commit()
-        
+
         logger.info("analysis_completed", case_id=case_id)
         return {
             "ok": True,
@@ -506,7 +515,7 @@ def analyze_case(case_id: str, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to analyze case. Please try again.",
-        )
+        ) from e
 
 
 @app.get("/cases/{case_id}/outputs", response_model=dict)
@@ -519,7 +528,7 @@ def get_outputs(case_id: str, db: Session = Depends(get_db)) -> dict:
     timeline = db.query(TimelineItem).filter(TimelineItem.case_id == case_id).all()
     risks = db.query(Risk).filter(Risk.case_id == case_id).all()
     chunks = db.query(Chunk).filter(Chunk.case_id == case_id).all()
-    
+
     # Fetch documents to map IDs to filenames
     documents = db.query(Document).filter(Document.case_id == case_id).all()
     doc_map = {d.id: d.filename for d in documents}
@@ -531,11 +540,11 @@ def get_outputs(case_id: str, db: Session = Depends(get_db)) -> dict:
             "filename": doc_map.get(c.document_id, "Unknown File"),
             "idx": c.idx,
             "text": c.text
-        } 
+        }
         for c in chunks
     }
 
-    def split_ids(s: str) -> List[str]:
+    def split_ids(s: str) -> list[str]:
         return [x for x in (s or "").split(",") if x]
 
     return {
@@ -577,13 +586,13 @@ def get_outputs(case_id: str, db: Session = Depends(get_db)) -> dict:
     }
 
 
-@app.get("/cases", response_model=List[CaseOut])
-def list_cases(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) -> List[CaseOut]:
+@app.get("/cases", response_model=list[CaseOut])
+def list_cases(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) -> list[CaseOut]:
     """List all cases with pagination."""
     logger.info("listing_cases", skip=skip, limit=limit)
-    
+
     cases = db.query(Case).order_by(Case.created_at.desc()).offset(skip).limit(limit).all()
-    
+
     logger.info("cases_listed", count=len(cases))
     return [
         CaseOut(id=c.id, title=c.title, scenario=c.scenario, summary=c.summary)
@@ -595,7 +604,7 @@ def list_cases(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) ->
 def delete_case(case_id: str, db: Session = Depends(get_db)) -> dict:
     """Delete a case and all associated data."""
     logger.info("deleting_case", case_id=case_id)
-    
+
     case = db.get(Case, case_id)
     if not case:
         logger.warning("delete_case_not_found", case_id=case_id)
@@ -603,7 +612,7 @@ def delete_case(case_id: str, db: Session = Depends(get_db)) -> dict:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     try:
         db.delete(case)
         db.commit()
@@ -615,28 +624,28 @@ def delete_case(case_id: str, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete case. Please try again.",
-        )
+        ) from e
 
 
 @app.get("/cases/{case_id}/statistics", response_model=dict)
 def get_case_statistics(case_id: str, db: Session = Depends(get_db)) -> dict:
     """Get statistics about a case."""
     logger.info("fetching_statistics", case_id=case_id)
-    
+
     case = db.get(Case, case_id)
     if not case:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     # Count various items
     document_count = db.query(Document).filter(Document.case_id == case_id).count()
     chunk_count = db.query(Chunk).filter(Chunk.case_id == case_id).count()
     checklist_count = db.query(ChecklistItem).filter(ChecklistItem.case_id == case_id).count()
     timeline_count = db.query(TimelineItem).filter(TimelineItem.case_id == case_id).count()
     risk_count = db.query(Risk).filter(Risk.case_id == case_id).count()
-    
+
     # Count risks by severity
     risks = db.query(Risk).filter(Risk.case_id == case_id).all()
     risk_breakdown = {"high": 0, "medium": 0, "low": 0}
@@ -644,9 +653,9 @@ def get_case_statistics(case_id: str, db: Session = Depends(get_db)) -> dict:
         severity = risk.severity.lower()
         if severity in risk_breakdown:
             risk_breakdown[severity] += 1
-    
+
     logger.info("statistics_fetched", case_id=case_id)
-    
+
     return {
         "case_id": case_id,
         "documents": document_count,
@@ -662,11 +671,11 @@ def get_case_statistics(case_id: str, db: Session = Depends(get_db)) -> dict:
 def get_global_statistics(db: Session = Depends(get_db)) -> dict:
     """Get global statistics across all cases."""
     logger.info("fetching_global_statistics")
-    
+
     total_cases = db.query(Case).count()
     total_documents = db.query(Document).count()
     total_chunks = db.query(Chunk).count()
-    
+
     # Count by scenario
     from sqlalchemy import func
     scenario_counts = (
@@ -674,14 +683,14 @@ def get_global_statistics(db: Session = Depends(get_db)) -> dict:
         .group_by(Case.scenario)
         .all()
     )
-    
+
     logger.info("global_statistics_fetched")
-    
+
     return {
         "total_cases": total_cases,
         "total_documents": total_documents,
         "total_chunks": total_chunks,
-        "cases_by_scenario": {scenario: count for scenario, count in scenario_counts},
+        "cases_by_scenario": dict(scenario_counts),
     }
 
 
@@ -689,7 +698,7 @@ def get_global_statistics(db: Session = Depends(get_db)) -> dict:
 def create_demo_preset(db: Session = Depends(get_db)) -> dict:
     """Create a demo case with sample data for quick testing."""
     logger.info("creating_demo_preset")
-    
+
     try:
         case_id = str(uuid.uuid4())
         case = Case(
@@ -700,7 +709,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
         )
         db.add(case)
         db.flush()
-        
+
         doc_id = str(uuid.uuid4())
         doc = Document(
             id=doc_id,
@@ -711,7 +720,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
         )
         db.add(doc)
         db.flush()
-        
+
         demo_text = (
             "Invitation Letter for Family Visit.\n"
             "Host: Alex Rivera. Address: 10 Maple St, Toronto, ON.\n"
@@ -722,7 +731,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
             "Accommodation: Guest room in host's residence.\n"
             "Financial support: Host will cover all expenses during visit."
         )
-        
+
         # Split into chunks
         for idx, t in enumerate([demo_text[i : i + 200] for i in range(0, len(demo_text), 200)]):
             db.add(
@@ -734,7 +743,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
                     text=t,
                 )
             )
-        
+
         # Populate demo User Story
         case.user_story = "I am inviting my parent for a visit from Mexico to Canada for 6 weeks during the holidays. I will cover their expenses."
         db.add(case)
@@ -746,7 +755,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
         db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Draft Letter of Invitation", status="done", notes="Include details about accommodation and financial support."))
         db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Gather Proof of Funds", status="in_progress", notes="Bank statements for the last 4 months."))
         db.add(ChecklistItem(id=str(uuid.uuid4()), case_id=case_id, label="Check Visa Requirements", status="todo", notes="Verify if TRV is needed for Mexico citizens (ETA might be sufficient)."))
-        
+
         # Timeline
         db.add(TimelineItem(id=str(uuid.uuid4()), case_id=case_id, label="Submit Application", due_date="2024-12-01", owner="Alex", notes="Apply 2 months before travel."))
         db.add(TimelineItem(id=str(uuid.uuid4()), case_id=case_id, label="Travel Window Starts", due_date="2025-01-15", owner="Sam", notes="Planned arrival."))
@@ -756,7 +765,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
         db.add(Risk(id=str(uuid.uuid4()), case_id=case_id, category="Ties to Home", severity="medium", statement="Visitor must prove intent to return.", reason="Sam should provide proof of employment or property in Mexico."))
 
         db.commit()
-        
+
         logger.info("demo_preset_created", case_id=case_id)
         return {"case_id": case_id, "title": case.title, "message": "Demo case created with insights"}
 
@@ -766,7 +775,7 @@ def create_demo_preset(db: Session = Depends(get_db)) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create demo preset. Please try again.",
-        )
+        ) from e
 
 
 @app.get("/cases/{case_id}/export")
@@ -777,7 +786,7 @@ def export_case(
 ):
     """Export case data in various formats (JSON or Markdown)."""
     logger.info("exporting_case", case_id=case_id, format=format)
-    
+
     # Get all case data (reuse get_outputs logic)
     case = db.get(Case, case_id)
     if not case:
@@ -785,15 +794,15 @@ def export_case(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Case with ID {case_id} not found",
         )
-    
+
     checklist = db.query(ChecklistItem).filter(ChecklistItem.case_id == case_id).all()
     timeline = db.query(TimelineItem).filter(TimelineItem.case_id == case_id).all()
     risks = db.query(Risk).filter(Risk.case_id == case_id).all()
     chunks = db.query(Chunk).filter(Chunk.case_id == case_id).all()
-    
-    def split_ids(s: str) -> List[str]:
+
+    def split_ids(s: str) -> list[str]:
         return [x for x in (s or "").split(",") if x]
-    
+
     case_data = {
         "case": {
             "id": case.id,
@@ -838,9 +847,9 @@ def export_case(
             for c in chunks
         },
     }
-    
+
     logger.info("case_data_prepared", case_id=case_id, format=format)
-    
+
     if format == "json":
         content = export_case_json(case_data)
         media_type = "application/json"
@@ -849,9 +858,9 @@ def export_case(
         content = export_case_markdown(case_data)
         media_type = "text/markdown"
         filename = f"case_{case_id[:8]}.md"
-    
+
     logger.info("case_exported", case_id=case_id, format=format)
-    
+
     return PlainTextResponse(
         content=content,
         media_type=media_type,
@@ -863,10 +872,10 @@ def export_case(
 def search_cases(
     q: str = Query(..., min_length=2, description="Search query"),
     db: Session = Depends(get_db),
-) -> List[CaseOut]:
+) -> list[CaseOut]:
     """Search cases by title or scenario."""
     logger.info("searching_cases", query=q)
-    
+
     # Simple search across title and scenario
     search_term = f"%{q}%"
     cases = (
@@ -878,21 +887,21 @@ def search_cases(
         .limit(50)
         .all()
     )
-    
+
     logger.info("search_completed", query=q, results=len(cases))
-    
+
     return [
         CaseOut(id=c.id, title=c.title, scenario=c.scenario, summary=c.summary)
         for c in cases
     ]
 
 
-@app.get("/documents", response_model=List[DocumentOut])
-def list_documents(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) -> List[DocumentOut]:
+@app.get("/documents", response_model=list[DocumentOut])
+def list_documents(skip: int = 0, limit: int = 50, db: Session = Depends(get_db)) -> list[DocumentOut]:
     """List all documents."""
     logger.info("listing_documents", skip=skip, limit=limit)
     docs = db.query(Document).order_by(Document.created_at.desc()).offset(skip).limit(limit).all()
-    
+
     return [
         DocumentOut(
             id=d.id,
@@ -914,31 +923,31 @@ def download_document(document_id: str, db: Session = Depends(get_db)):
 
     try:
         store = get_store()
-        
+
         # S3 Storage: Redirect to public URL
         if hasattr(store, "get_download_url"):
-             try:
-                 url = store.get_download_url(doc.storage_key)
-                 # Check if it's an HTTP URL we can redirect to
-                 if url.startswith("http"):
-                     return RedirectResponse(url)
-             except Exception:
-                 pass # Fallback or cleaner error
-        
+            try:
+                url = store.get_download_url(doc.storage_key)
+                # Check if it's an HTTP URL we can redirect to
+                if url.startswith("http"):
+                    return RedirectResponse(url)
+            except Exception:
+                pass  # Fallback or cleaner error
+
         # Local Storage: File Response
         # Ensure we are using local storage for this endpoint if get_file_path works
         try:
-             path = store.get_file_path(doc.storage_key)
-             return FileResponse(path, filename=doc.filename, media_type=doc.content_type)
-        except NotImplementedError:
-             # If S3 but failed to get HTTP URL
-             raise HTTPException(status_code=501, detail="Download available only via direct S3 URL.")
+            path = store.get_file_path(doc.storage_key)
+            return FileResponse(path, filename=doc.filename, media_type=doc.content_type)
+        except NotImplementedError as exc:
+            # If S3 but failed to get HTTP URL
+            raise HTTPException(status_code=501, detail="Download available only via direct S3 URL.") from exc
 
-    except NotImplementedError:
-        raise HTTPException(status_code=501, detail="Download not supported for this storage backend")
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=501, detail="Download not supported for this storage backend") from exc
     except Exception as e:
         logger.error("download_failed", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to download file")
+        raise HTTPException(status_code=500, detail="Failed to download file") from e
 
 
 @app.delete("/documents/{document_id}", status_code=status.HTTP_200_OK)
@@ -963,11 +972,11 @@ def delete_document(document_id: str, db: Session = Depends(get_db)) -> dict:
         db.commit()
         logger.info("document_deleted", document_id=document_id)
         return {"success": True}
-        
+
     except Exception as e:
         logger.error("document_deletion_failed", error=str(e), exc_info=True)
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete document")
+        raise HTTPException(status_code=500, detail="Failed to delete document") from e
 
 
 class ChecklistStatusUpdate(BaseModel):
@@ -975,39 +984,39 @@ class ChecklistStatusUpdate(BaseModel):
 
 @app.patch("/checklist/{item_id}/status", response_model=dict)
 def update_checklist_status(
-    item_id: str, 
-    payload: ChecklistStatusUpdate, 
+    item_id: str,
+    payload: ChecklistStatusUpdate,
     db: Session = Depends(get_db)
 ) -> dict:
     """Update the status of a checklist item (e.g. todo -> done)."""
     logger.info("updating_checklist_status", item_id=item_id, status=payload.status)
-    
+
     item = db.get(ChecklistItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Checklist item not found")
-        
+
     item.status = payload.status
     db.commit()
-    
+
     return {"id": item.id, "status": item.status}
 
 
 @app.patch("/timeline/{item_id}/status", response_model=dict)
 def update_timeline_status(
-    item_id: str, 
-    payload: ChecklistStatusUpdate, 
+    item_id: str,
+    payload: ChecklistStatusUpdate,
     db: Session = Depends(get_db)
 ) -> dict:
     """Update the status of a timeline item."""
     logger.info("updating_timeline_status", item_id=item_id, status=payload.status)
-    
+
     item = db.get(TimelineItem, item_id)
     if not item:
         raise HTTPException(status_code=404, detail="Timeline item not found")
-        
+
     item.status = payload.status
     db.commit()
-    
+
     return {"id": item.id, "status": item.status}
 
 
