@@ -1,5 +1,4 @@
 """Test case endpoints."""
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -24,7 +23,7 @@ def test_get_case(client: TestClient):
         json={"title": "Test Case", "scenario": "family_reunion"},
     )
     case_id = create_response.json()["id"]
-    
+
     # Get the case
     response = client.get(f"/cases/{case_id}")
     assert response.status_code == 200
@@ -47,7 +46,7 @@ def test_list_cases(client: TestClient):
             "/cases",
             json={"title": f"Test Case {i}", "scenario": "family_reunion"},
         )
-    
+
     # List cases
     response = client.get("/cases")
     assert response.status_code == 200
@@ -64,11 +63,11 @@ def test_delete_case(client: TestClient):
         json={"title": "Test Case", "scenario": "family_reunion"},
     )
     case_id = create_response.json()["id"]
-    
+
     # Delete the case
     response = client.delete(f"/cases/{case_id}")
     assert response.status_code == 200
-    
+
     # Verify it's gone
     get_response = client.get(f"/cases/{case_id}")
     assert get_response.status_code == 404
@@ -82,7 +81,7 @@ def test_case_statistics(client: TestClient):
         json={"title": "Test Case", "scenario": "family_reunion"},
     )
     case_id = create_response.json()["id"]
-    
+
     # Get statistics
     response = client.get(f"/cases/{case_id}/statistics")
     assert response.status_code == 200
@@ -103,7 +102,7 @@ def test_search_cases(client: TestClient):
         "/cases",
         json={"title": "Job Application", "scenario": "job_onboarding"},
     )
-    
+
     # Search for "family"
     response = client.get("/search?q=family")
     assert response.status_code == 200

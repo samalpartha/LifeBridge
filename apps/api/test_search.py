@@ -1,5 +1,6 @@
-from duckduckgo_search import DDGS
 import json
+
+from duckduckgo_search import DDGS
 
 try:
     print("Testing DDGS...")

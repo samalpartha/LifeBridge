@@ -5,10 +5,13 @@ https://github.com/fastapi/full-stack-fastapi-template
 """
 import os
 
-os.environ.setdefault("ENVIRONMENT", "local")
-os.environ.setdefault("GRADIENT_RUNTIME_MODE", "mock")
-os.environ.setdefault("GRADIENT_ACCESS_TOKEN", "")
-os.environ.setdefault("GOOGLE_API_KEY", "test-key")
+os.environ["ENVIRONMENT"] = "local"
+os.environ["GRADIENT_RUNTIME_MODE"] = "mock"
+os.environ["GRADIENT_ACCESS_TOKEN"] = "test-unused"
+os.environ["GRADIENT_WORKSPACE_ID"] = "test-unused"
+os.environ["GRADIENT_AGENT_ENDPOINT"] = "https://test.invalid"
+os.environ["GRADIENT_AGENT_ACCESS_KEY"] = "test-unused"
+os.environ["GOOGLE_API_KEY"] = os.environ.get("GOOGLE_API_KEY", "test-key")
 
 import pytest
 from app.api.crisis import get_db as get_crisis_db

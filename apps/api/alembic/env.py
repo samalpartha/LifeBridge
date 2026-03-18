@@ -6,10 +6,9 @@ https://github.com/fastapi/full-stack-fastapi-template
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
-
 from app.core.config import settings
 from app.db.models import Base
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object
 config = context.config

@@ -1,9 +1,8 @@
-import pytest
 from fastapi.testclient import TestClient
-from app.main import app
+
 
 def test_attorney_search(client: TestClient):
-    # Search for an attorney 
+    # Search for an attorney
     response = client.get("/attorneys/search?query=immigration")
     assert response.status_code == 200
     data = response.json()

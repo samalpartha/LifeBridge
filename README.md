@@ -46,13 +46,265 @@ Core implementation:
 - Tracker workspace for case continuity (tasks, notes, history, documents)
 - Knowledge and help surfaces integrated with live runtime indicators
 
+---
+
 ## Architecture
 
-- Frontend: Next.js (`apps/web`)
-- Core API: FastAPI (`apps/api`)
-- Tracker API: FastAPI (`apps/tracker-api`)
-- Doc generation service: FastAPI (`apps/docgen`)
-- Storage layer: PostgreSQL + object storage compatible pattern
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Client["Browser"]
+        WEB["Next.js 15 Frontend<br/>(React 18 · TypeScript · Tailwind)"]
+    end
+
+    subgraph CloudRun["Google Cloud Run"]
+        API["Core API<br/>FastAPI · Python 3.11"]
+        TRACKER["Tracker API<br/>FastAPI · Python 3.11"]
+        DOCGEN["Docgen Service<br/>FastAPI · WeasyPrint"]
+    end
+
+    subgraph DigitalOcean["DigitalOcean Gradient"]
+        AGENT["Agent Endpoint<br/>DeepSeek R1 Distill 70B"]
+        KB["RAG Knowledge Base<br/>Crisis Protocols · Safety Controls"]
+    end
+
+    subgraph Data["Data Layer"]
+        PG1[("PostgreSQL<br/>Cases · Havens · Traces")]
+        PG2[("PostgreSQL<br/>Tracker Cases · History")]
+        S3["MinIO / S3<br/>Document Storage"]
+    end
+
+    subgraph External["External Intelligence"]
+        OSM["OpenStreetMap<br/>Nominatim + Overpass"]
+        GMAPS["Google Maps API"]
+    end
+
+    WEB -- "/api/*" --> API
+    WEB -- "/api/tracker/*" --> TRACKER
+    WEB -- "/api/docgen/*" --> DOCGEN
+
+    API --> PG1
+    API --> S3
+    API -- "Chat Completions" --> AGENT
+    AGENT -- "RAG Retrieval" --> KB
+    API -- "Geocode + Nearby" --> OSM
+    API -- "Maps" --> GMAPS
+
+    TRACKER --> PG2
+    DOCGEN -- "PDF render" --> DOCGEN
+```
+
+### Frontend Architecture
+
+```mermaid
+flowchart LR
+    subgraph Pages["App Router Pages"]
+        direction TB
+        HOME["/  Home Dashboard"]
+        CH["/crisis-home  Launch"]
+        CR["/crisis  Command Center"]
+        RE["/reunion/:code  Beacon"]
+        MAP["/map  Map View"]
+        KN["/knowledge  Knowledge Hub"]
+        KS["/knowledge/:slug  Topic"]
+        ATT["/attorneys  Attorney Search"]
+        HELP["/help  Help Center"]
+        RES["/resources  Resources"]
+
+        subgraph Tracker["/tracker/*"]
+            TD["Dashboard"]
+            TC["Cases · Cases/:id"]
+            TT["Tasks"]
+            TN["Notes"]
+            TDOC["Documents"]
+            TCON["Contacts"]
+            TREP["Reports"]
+            TH["History: Travel · Employment · Residence"]
+        end
+
+        AUTH["/login · /signup · /forgot-password"]
+        VAULT["/vault  Evidence Vault"]
+    end
+
+    subgraph Components["Shared Components"]
+        CHAT["SamaritanChat<br/>Gradient AI Chatbot"]
+        NAV["NavBar + Sidebar"]
+        LOGO["BrandLogo"]
+        LANG["LanguageSwitcher<br/>EN / ES"]
+        LIVE["LiveRuntimeCard"]
+        AMAP["AttorneyMap · MapView<br/>Leaflet.js"]
+    end
+
+    subgraph Contexts["React Contexts"]
+        AUTHC["AuthProvider<br/>localStorage"]
+        LANGC["LanguageProvider<br/>i18n"]
+    end
+
+    subgraph Rewrites["Next.js Rewrites → Backend"]
+        R1["/api/*  →  Core API :8000"]
+        R2["/api/tracker/*  →  Tracker :3100/v1/*"]
+        R3["/api/docgen/*  →  Docgen :8000"]
+    end
+
+    Pages --> Components
+    Pages --> Contexts
+    Pages --> Rewrites
+```
+
+### Backend Architecture (Core API)
+
+```mermaid
+flowchart TB
+    subgraph Routers["API Routers"]
+        MAIN["main.py<br/>/health · /chat · /cases · /documents · /search"]
+        CRISIS["crisis.py<br/>/crisis/runtime · /crisis/havens · /crisis/routes<br/>/crisis/checkins · /crisis/beacons · /crisis/help<br/>/crisis/agent/query · /crisis/traces"]
+        KNOW["knowledge.py<br/>/knowledge/*"]
+        ATTY["attorneys.py<br/>/attorneys/*"]
+    end
+
+    subgraph Services["Service Layer"]
+        GRAD["GradientAIService<br/>Live / Mock / Auto modes"]
+        CRRT["CrisisRouting<br/>Route generation"]
+        CRKB["CrisisKBContent<br/>FAQs · Protocols"]
+        EVAL["Evaluations<br/>Quality scoring"]
+        EXTR["Extract<br/>Document parsing"]
+        EXPR["Export<br/>JSON · Markdown"]
+        STOR["Storage<br/>S3 / MinIO"]
+        LLM["LLM Utils"]
+        ATTS["AttorneyService"]
+        KBS["KnowledgeService"]
+    end
+
+    subgraph Models["Database Models"]
+        direction LR
+        M1["Case · Document · Chunk"]
+        M2["Risk · TimelineItem · ChecklistItem"]
+        M3["SafeHaven · HavenUpdate"]
+        M4["CheckIn · HelpRequest · HelpOffer"]
+        M5["ReunificationBeacon · AgentTrace"]
+    end
+
+    Routers --> Services
+    Services --> Models
+    GRAD --> |"Live"| DO["DigitalOcean Gradient"]
+    GRAD --> |"Geocode"| OSM2["OpenStreetMap APIs"]
+```
+
+### Gradient AI Agent Flow
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant Chat as SamaritanChat<br/>(Frontend)
+    participant API as Core API<br/>(FastAPI)
+    participant Grad as GradientAIService
+    participant OSM as OpenStreetMap
+    participant Agent as DO Agent Endpoint<br/>(DeepSeek R1 70B)
+    participant KB as Gradient RAG<br/>Knowledge Base
+    participant DB as PostgreSQL
+
+    User->>Chat: "Where are shelters near me?"
+    Chat->>API: POST /crisis/agent/query<br/>{query, context: {lat, lon}}
+    API->>Grad: run_query(query, context)
+
+    rect rgb(230, 245, 255)
+        Note over Grad,OSM: Location Intelligence Enrichment
+        Grad->>OSM: Reverse geocode (lat, lon)
+        OSM-->>Grad: City, region, country
+        Grad->>OSM: Overpass nearby services query
+        OSM-->>Grad: Hospitals, shelters, police stations
+    end
+
+    rect rgb(255, 243, 224)
+        Note over Grad,KB: DigitalOcean Gradient RAG
+        Grad->>Agent: POST /api/v1/chat/completions<br/>{messages, retrieval: {k:8, method: rewrite}, kb_id}
+        Agent->>KB: RAG retrieval query
+        KB-->>Agent: Crisis protocols, safety controls
+        Agent-->>Grad: AI response + retrieval sources
+    end
+
+    rect rgb(232, 245, 233)
+        Note over Grad: Local Multi-Agent Orchestration
+        Grad->>Grad: HavenIntelAgent → search nearby havens
+        Grad->>Grad: RouteRiskAgent → generate safe routes
+        Grad->>Grad: ReunificationAgent → family guidance
+        Grad->>Grad: AidMatchingAgent → nearby help
+        Grad->>Grad: SafetyGuardianAgent → safety checks
+    end
+
+    Grad->>DB: Persist AgentTrace<br/>{trace_id, tool_calls, sources, confidence, duration}
+    Grad-->>API: {response, sources, tool_calls, trace_id, agents, mode}
+    API-->>Chat: JSON response
+    Chat-->>User: Formatted crisis guidance<br/>with sources and confidence
+```
+
+### Tracker API Architecture
+
+```mermaid
+flowchart TB
+    subgraph TrackerRoutes["Tracker API Routes  (/v1)"]
+        CASES["/cases<br/>CRUD + Events + Status"]
+        TASKS["/tasks<br/>CRUD"]
+        NOTES["/notes<br/>Create · List"]
+        DOCS["/documents<br/>Create · List"]
+        CONTACTS["/contacts<br/>Create · List"]
+        HIST["/history<br/>Travel · Employment · Residence"]
+        EXPORT["/export/pdf<br/>PDF Generation"]
+        DEMO["/demo/seed<br/>Seed test data"]
+    end
+
+    subgraph TrackerModels["Tracker Models"]
+        IC["ImmigrationCase<br/>+ CaseEvent"]
+        TH2["TravelHistory"]
+        EH["EmploymentHistory"]
+        RH["ResidenceHistory"]
+        DOC2["Document"]
+        CON["Contact"]
+        NOTE2["Note"]
+        TASK2["Task"]
+    end
+
+    TrackerRoutes --> TrackerModels
+    TrackerModels --> PG3[("PostgreSQL<br/>Tracker DB")]
+```
+
+### Deployment Architecture
+
+```mermaid
+flowchart TB
+    subgraph GCR["Google Cloud Run"]
+        direction LR
+        FE["lifebridge-web<br/>:443"]
+        BE["lifebridge-api<br/>:443"]
+        TR["lifebridge-tracker<br/>:443"]
+        DG["lifebridge-docgen<br/>:443"]
+    end
+
+    subgraph Docker["Local Development (Docker Compose)"]
+        direction LR
+        FE2["web :3000"]
+        BE2["api :8000"]
+        TR2["tracker-api :3100"]
+        DG2["docgen :8001"]
+        DB2[("db :5432")]
+        TDB[("tracker-db :5433")]
+        MIN["minio :9000"]
+    end
+
+    BROWSER["Browser"] --> FE
+    BROWSER --> FE2
+
+    FE --> BE
+    FE --> TR
+    FE --> DG
+    FE2 --> BE2
+    FE2 --> TR2
+    FE2 --> DG2
+    BE2 --> DB2
+    BE2 --> MIN
+    TR2 --> TDB
+```
 
 ## Quick Start
 

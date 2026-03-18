@@ -3,7 +3,6 @@
 import urllib.error
 
 import pytest
-
 from app.services.gradient_ai import (
     GradientAIService,
     _extract_endpoint_response_text,

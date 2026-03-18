@@ -1,11 +1,13 @@
 import asyncio
+
 import httpx
+
 
 async def test_search(zip_code):
     print(f"Testing ZIP (Backend API): {zip_code}")
     # Testing the running local API container directly
-    base_url = "http://localhost:8000" 
-    
+    base_url = "http://localhost:8000"
+
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(f"{base_url}/attorneys/search", params={"zip": zip_code})

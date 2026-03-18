@@ -1,10 +1,12 @@
 import asyncio
+
 import httpx
+
 
 async def test_search(zip_code):
     print(f"Testing Gemini Search for ZIP: {zip_code}")
     base_url = "http://localhost:8000"
-    
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
             resp = await client.get(f"{base_url}/attorneys/search", params={"zip": zip_code})

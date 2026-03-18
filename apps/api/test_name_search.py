@@ -1,9 +1,11 @@
 import asyncio
+
 import httpx
+
 
 async def test_search():
     base_url = "http://localhost:8000"
-    
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         # 1. Test Name Search
         print("\n--- Testing Name Search: 'Smith Law' ---")
