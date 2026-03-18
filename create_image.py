@@ -1,3 +1,5 @@
+"""Local OCR fixture generator (refreshed 2026-03-18)."""
+
 from PIL import Image, ImageDraw
 
 def create_image():

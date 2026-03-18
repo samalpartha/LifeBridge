@@ -1,3 +1,5 @@
+"""Local model listing helper (refreshed 2026-03-18)."""
+
 import google.generativeai as genai
 import os
 

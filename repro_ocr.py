@@ -1,3 +1,5 @@
+"""Quick OCR reproduction helper (refreshed 2026-03-18)."""
+
 import requests
 import io
 from PIL import Image, ImageDraw

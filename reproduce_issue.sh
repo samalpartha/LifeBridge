@@ -1,4 +1,5 @@
 #!/bin/bash
+# Refreshed for repository housekeeping on 2026-03-18.
 API_BASE="http://localhost:8000"
 
 echo "Listing documents..."

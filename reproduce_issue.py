@@ -1,3 +1,5 @@
+"""Document delete reproduction helper (refreshed 2026-03-18)."""
+
 import requests
 import json
 

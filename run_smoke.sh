@@ -1,4 +1,5 @@
 #!/bin/bash
+# Refreshed for repository housekeeping on 2026-03-18.
 set -e
 
 echo "======================================================="
