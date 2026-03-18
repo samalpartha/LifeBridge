@@ -16,7 +16,7 @@ if not DATABASE_URL:
         DATABASE_URL = os.getenv("POSTGRES_URL")
 
 
-# Fix for Railway/Render/Supabase: Force psycopg 3 driver
+# Normalize postgres:// to postgresql+psycopg:// for psycopg 3 driver
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)

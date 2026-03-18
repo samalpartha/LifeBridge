@@ -692,7 +692,7 @@ curl http://localhost:8000/cases/$CASE_ID/outputs | jq '.'
 
 - [ ] Set strong database password
 - [ ] Configure production CORS origins
-- [ ] Use managed PostgreSQL (Railway, AWS RDS)
+- [ ] Use managed PostgreSQL (Cloud SQL, AWS RDS)
 - [ ] Use production S3 (AWS S3, Cloudflare R2)
 - [ ] Enable HTTPS (use reverse proxy)
 - [ ] Add authentication

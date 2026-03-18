@@ -237,8 +237,8 @@
 - 🔄 **Health Checks** - Service readiness monitoring
 
 ### Cloud Ready
-- ☁️ **Railway Compatible** - Easy deployment
-- 🌐 **Vercel Compatible** - Frontend deployment
+- ☁️ **Google Cloud Run** - Production deployment
+- 🐳 **Docker Compose** - Local and VPS deployment
 - 📦 **S3 Compatible** - Any S3-like storage
 - 🗄️ **PostgreSQL** - Standard database
 

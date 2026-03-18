@@ -166,7 +166,7 @@ docker compose logs -f web
 
 ### Q: How do I deploy to production?
 
-**A:** See `DEPLOYMENT.md` for detailed instructions. Recommended: Railway for API/DB, Vercel for frontend.
+**A:** See `DEPLOYMENT.md` for detailed instructions. The app is deployed on Google Cloud Run.
 
 ### Q: Do I need to change anything for production?
 
@@ -179,12 +179,7 @@ docker compose logs -f web
 
 ### Q: How much does it cost to run in production?
 
-**A:** Estimated monthly costs:
-- **Development**: $5-10 (Railway Hobby)
-- **Production (low traffic)**: $20-30
-- **Production (high traffic)**: $50-100
-
-See `DEPLOYMENT.md` for details.
+**A:** Google Cloud Run charges per request and compute time. For low traffic the free tier covers most usage. See `DEPLOYMENT.md` for details.
 
 ### Q: Can I use AWS S3 instead of MinIO?
 

@@ -106,13 +106,11 @@ The application is now **completely functional** and ready for production use. A
 **File**: `DEPLOYMENT.md` (new)
 
 **Contents**:
-- Railway deployment instructions
-- VPS deployment with Docker
-- Kubernetes deployment guide
+- Google Cloud Run deployment instructions
+- Docker Compose deployment
+- Local dev server setup
 - Environment variables reference
 - Security checklist
-- Backup strategies
-- Cost optimization tips
 
 ### 5. Updated Main README
 **File**: `README.md`
@@ -242,9 +240,9 @@ The application is now **completely functional** and ready for production use. A
 ## 🎯 Production Readiness
 
 ### Deployment Options
-1. **Railway** - Easiest, recommended for hackathon
-2. **Docker Compose on VPS** - Full control
-3. **Kubernetes** - Enterprise scale
+1. **Google Cloud Run** - Production deployment
+2. **Docker Compose** - Local and VPS deployment
+3. **Local dev servers** - For development and demo
 
 ### Checklist
 - ✅ All services containerized

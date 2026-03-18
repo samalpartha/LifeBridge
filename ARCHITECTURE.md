@@ -425,7 +425,7 @@ def build_reasoning(scenario: str, chunks: List[str]) -> ReasoningResult:
 - Use load balancer
 
 **Database**:
-- Use managed service (Railway, RDS)
+- Use managed service (Cloud SQL, RDS)
 - Connection pooling configured
 - Read replicas for heavy read loads
 
@@ -517,8 +517,8 @@ docker compose logs -f web
 
 ### Deployment
 
-1. **Staging**: Railway preview deployments
-2. **Production**: Railway + Vercel
+1. **Production**: Google Cloud Run (all four services)
+2. **Local**: Docker Compose or direct dev servers
 3. **Monitoring**: Sentry, DataDog
 
 ## Technology Choices
@@ -532,7 +532,7 @@ docker compose logs -f web
 ### Why Next.js?
 - React with SSR/SSG capabilities
 - Great developer experience
-- Easy deployment to Vercel
+- Built-in API rewrites for service proxying
 - Built-in routing
 
 ### Why PostgreSQL?
