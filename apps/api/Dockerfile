@@ -23,6 +23,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Create non-root user for security
+RUN useradd -m -u 1000 appuser
+
 # Install runtime system dependencies for OCR and PDF processing
 RUN apt-get update && apt-get install -y \
     tesseract-ocr \
@@ -33,7 +36,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Copy Python dependencies from builder
-COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
+COPY --from=builder /root/.local /home/appuser/.local
 
 # Make sure scripts in .local are usable
 ENV PATH=/home/appuser/.local/bin:$PATH
@@ -47,9 +50,7 @@ COPY entrypoint.sh ./
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+RUN chown -R appuser:appuser /home/appuser /app
 
 USER appuser
 

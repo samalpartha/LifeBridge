@@ -101,14 +101,23 @@ GRADIENT_DEFAULT_RETRIEVAL_K=8
 GRADIENT_SUB_QUERY_RETRIEVAL_K=12
 ```
 
+## Live Deployment (Google Cloud Run)
+
+| Service | URL |
+|---------|-----|
+| Frontend | [https://lifebridge-web-365415503294.us-central1.run.app](https://lifebridge-web-365415503294.us-central1.run.app) |
+| Core API | [https://lifebridge-api-365415503294.us-central1.run.app](https://lifebridge-api-365415503294.us-central1.run.app) |
+| Tracker API | [https://lifebridge-tracker-365415503294.us-central1.run.app](https://lifebridge-tracker-365415503294.us-central1.run.app) |
+| Docgen API | [https://lifebridge-docgen-365415503294.us-central1.run.app](https://lifebridge-docgen-365415503294.us-central1.run.app) |
+
 ## Demo Verification Checklist
 
-1. Open `http://localhost:3009/crisis-home`
+1. Open the live frontend or `http://localhost:3009/crisis-home`
 2. Launch Crisis Mode and verify live indicators on `/crisis`
-3. Call live runtime probe: `http://127.0.0.1:8009/crisis/runtime/live-check`
+3. Call live runtime probe: `https://lifebridge-api-365415503294.us-central1.run.app/crisis/runtime/live-check`
 4. Create beacon and open `/reunion/{code}`
 5. Submit help request + offer and verify nearby matching
-6. Open tracker pages and confirm data persists in `tracker.db`
+6. Open tracker pages and confirm data persists
 
 ## Testing
 
@@ -149,6 +158,9 @@ All crisis endpoints are under `/crisis`:
 ## Links
 
 - GitHub: [https://github.com/samalpartha/LifeBridge](https://github.com/samalpartha/LifeBridge)
+- Live app: [https://lifebridge-web-365415503294.us-central1.run.app](https://lifebridge-web-365415503294.us-central1.run.app)
+- Live API docs: [https://lifebridge-api-365415503294.us-central1.run.app/docs](https://lifebridge-api-365415503294.us-central1.run.app/docs)
+- Live Tracker docs: [https://lifebridge-tracker-365415503294.us-central1.run.app/docs](https://lifebridge-tracker-365415503294.us-central1.run.app/docs)
 - API docs (local): `http://127.0.0.1:8009/docs`
 - Tracker docs (local): `http://127.0.0.1:3100/docs`
 

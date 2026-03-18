@@ -1,0 +1,14 @@
+.git
+.gitignore
+.gcloudignore
+node_modules/
+.next/
+.next-build/
+.next-dev/
+playwright-report/
+test-results/
+coverage/
+*.log
+.env.local
+.env.*.local
+tests/
