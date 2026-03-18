@@ -1,5 +1,8 @@
 # Large Scale Implementation Roadmap
 
+> Refreshed for DigitalOcean Gradient AI Hackathon on 2026-03-18.
+
+
 **Goal**: Transform "LifeBridge" into an open-source, global SaaS platform for cross-border mobility, hiring, and financial integration.
 
 ## 1. Feature Expansion Strategy

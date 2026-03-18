@@ -29,8 +29,7 @@ export default function HistoryPage() {
             setLoading(true);
             const data = await trackerApi.getTravelHistory();
             setEntries(data);
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load travel history");
         } finally {
             setLoading(false);

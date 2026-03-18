@@ -80,7 +80,7 @@ sudo apt-get install docker-compose-plugin
 #### 2. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/lifebridge.git
+git clone https://github.com/samalpartha/LifeBridge.git
 cd lifebridge
 ```
 

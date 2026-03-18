@@ -1,13 +1,11 @@
 "use client";
 
 import { useAuth } from "@/app/contexts/auth-context";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { BrandLogo } from "../components/BrandLogo";
 
 export default function LoginPage() {
-    const router = useRouter();
     const { login, socialLogin } = useAuth();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -15,8 +13,8 @@ export default function LoginPage() {
     const handleSocialLogin = async (provider: string) => {
         try {
             await socialLogin(provider);
-        } catch (err) {
-            console.error(err);
+        } catch {
+            setError(`Social login via ${provider} is temporarily unavailable.`);
         }
     };
 
@@ -40,16 +38,8 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <div onClick={() => router.push("/")} className="mx-auto flex justify-center mb-6 cursor-pointer">
-                    <div className="relative w-20 h-20 bg-white rounded-2xl shadow-sm flex items-center justify-center overflow-hidden border border-gray-100">
-                        <Image
-                            src="/icon.png"
-                            alt="LifeBridge Logo"
-                            width={80}
-                            height={80}
-                            className="object-contain p-2"
-                        />
-                    </div>
+                <div className="mx-auto mb-6 flex justify-center">
+                    <BrandLogo variant="dark" iconSize={52} />
                 </div>
                 <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
                     Sign in to your account

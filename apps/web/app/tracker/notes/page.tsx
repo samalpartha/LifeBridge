@@ -31,8 +31,7 @@ export default function NotesPage() {
             const data = await trackerApi.getNotes();
             // Sort by date desc
             setNotes(data.sort((a, b) => new Date(b.note_date).getTime() - new Date(a.note_date).getTime()));
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load notes");
         } finally {
             setLoading(false);

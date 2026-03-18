@@ -1,5 +1,8 @@
 # LifeBridge Architecture
 
+> Refreshed for DigitalOcean Gradient AI Hackathon on 2026-03-18.
+
+
 ## System Overview
 
 ```

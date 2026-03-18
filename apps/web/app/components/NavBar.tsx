@@ -2,42 +2,27 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useAuth } from "../contexts/auth-context";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { BrandLogo } from "./BrandLogo";
 
 export function NavBar() {
     const { user, logout } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const repoUrl = process.env.NEXT_PUBLIC_REPO_URL || "https://github.com/samalpartha/LifeBridge";
 
     return (
         <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center space-x-3">
-                        <Link href="/" className="flex items-center space-x-3">
-                            <div className="w-10 h-10 rounded-lg flex items-center justify-center overflow-hidden">
-                                <Image
-                                    src="/icon.png"
-                                    alt="LifeBridge Logo"
-                                    width={40}
-                                    height={40}
-                                    className="object-cover"
-                                />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gradient">LifeBridge</h1>
-                                <p className="text-xs text-gray-500">
-                                    AI-Powered Mobility Assistant
-                                </p>
-                            </div>
-                        </Link>
+                        <BrandLogo variant="dark" iconSize={40} />
                     </div>
 
                     <div className="hidden md:flex items-center space-x-4">
                         <LanguageSwitcher />
                         <a
-                            href="https://github.com/yourusername/lifebridge"
+                            href={repoUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-600 hover:text-gray-900 transition-colors"

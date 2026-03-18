@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import time
 import uuid
-from typing import Generator, List
+from typing import Any, Generator, List
 
 from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +28,10 @@ from .services.extract import extract_text
 from .services.reason import build_reasoning
 from .services.storage import get_store
 from .services.export import export_case_json, export_case_markdown
+from .services.gradient_ai import gradient_service
+from .core.config import settings
 from .routers import knowledge, attorneys
+from .api import crisis
 from .utils.logger import configure_logging, get_logger
 
 # Configure logging
@@ -52,6 +55,7 @@ app = FastAPI(
 
 app.include_router(knowledge.router) # Knowledge base routes
 app.include_router(attorneys.router) # Attorney search routes
+app.include_router(crisis.router) # Crisis navigation routes (DigitalOcean Gradient AI Hackathon)
 
 # CORS configuration
 allowed_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
@@ -125,7 +129,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 @app.on_event("startup")
-def _startup() -> None:
+async def _startup() -> None:
     """Initialize the application on startup."""
     logger.info("application_starting", version="1.0.0")
     try:
@@ -135,6 +139,10 @@ def _startup() -> None:
         # Test storage connection
         store = get_store()
         logger.info("storage_initialized", store_type=type(store).__name__)
+
+        # Initialize Gradient runtime (live or deterministic fallback)
+        await gradient_service.bootstrap()
+        logger.info("gradient_runtime_ready", **gradient_service.get_runtime_status())
         
         logger.info("application_ready")
     except Exception as e:
@@ -168,6 +176,8 @@ def health() -> dict:
     except Exception as e:
         logger.error("health_check_storage_failed", error=str(e))
         storage_status = "unhealthy"
+
+    gradient_status = gradient_service.get_runtime_status()
     
     is_healthy = db_status == "healthy" and storage_status == "healthy"
     status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
@@ -180,7 +190,9 @@ def health() -> dict:
             "components": {
                 "database": db_status,
                 "storage": storage_status,
+                "gradient_runtime": gradient_status.get("active_mode", "unknown"),
             },
+            "gradient": gradient_status,
         },
     )
 
@@ -1001,13 +1013,88 @@ def update_timeline_status(
 
 class ChatRequest(BaseModel):
     message: str
+    context: dict[str, Any] = {}
 
 @app.post("/chat")
-def chat_endpoint(payload: ChatRequest):
-    """Chat with the AI assistant."""
-    from .services.llm import generate_chat_response
-    response_text = generate_chat_response(payload.message)
-    return {"response": response_text}
+async def chat_endpoint(payload: ChatRequest, db: Session = Depends(get_db)):
+    """Chat endpoint backed strictly by DigitalOcean Gradient retrieval."""
+    runtime = gradient_service.get_runtime_status()
+    if runtime.get("active_mode") != "live":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "DigitalOcean Gradient live retrieval is required for chat. "
+                "Ensure GRADIENT runtime is live and agent endpoint credentials are valid."
+            ),
+        )
+
+    context = dict(payload.context or {})
+    context.setdefault("channel", "samaritan_chat")
+    context.setdefault("max_tokens", 500)
+    context.setdefault("strict_live_only", True)
+    context.setdefault("include_local_agents", False)
+    context.setdefault("append_operational_plan", False)
+    context.setdefault("require_retrieval_sources", True)
+    context.setdefault("augment_location_intel", True)
+    context.setdefault("location_intel_radius_km", 8)
+    context.setdefault("disallow_deepseek_model", bool(settings.GRADIENT_DISALLOW_DEEPSEEK_MODEL))
+    if settings.GRADIENT_ALLOWED_MODEL_PATTERNS:
+        context.setdefault("required_model_patterns", settings.GRADIENT_ALLOWED_MODEL_PATTERNS)
+
+    lower_message = payload.message.lower()
+    has_location_coordinates = isinstance(context.get("lat"), (int, float)) and isinstance(
+        context.get("lon"), (int, float)
+    )
+    location_intent_tokens = (
+        " in ",
+        " near ",
+        " around ",
+        " nearby",
+        " closest",
+        " shelter",
+        " hospital",
+        " clinic",
+        " pharmacy",
+        " police",
+        " route",
+        " evacuation",
+        " evacuate",
+    )
+    location_intent = has_location_coordinates or any(token in lower_message for token in location_intent_tokens)
+    context.setdefault("require_realtime_sources", location_intent)
+    context.setdefault("show_realtime_sources_only", location_intent)
+
+    try:
+        result = await gradient_service.run_query(
+            query=payload.message,
+            context=context,
+            db=db,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Live DigitalOcean retrieval could not ground this answer yet: {exc}",
+        ) from exc
+    except Exception as exc:
+        logger.error("chat_endpoint_live_query_failed", error=str(exc), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Live DigitalOcean retrieval is temporarily unavailable. Please retry.",
+        ) from exc
+    if result.get("mode") != "live":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Live Gradient retrieval temporarily unavailable. Please retry.",
+        )
+
+    return {
+        "response": result.get("response", ""),
+        "sources": result.get("sources", []),
+        "trace_id": result.get("trace_id", ""),
+        "mode": result.get("mode", "live"),
+        "model": result.get("model"),
+        "retrieval_provider": "digitalocean_gradient",
+    }
 
 
 def open_bytesio(data: bytes):

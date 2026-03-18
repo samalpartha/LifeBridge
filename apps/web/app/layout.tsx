@@ -3,18 +3,32 @@ import "./globals.css";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/auth-context";
 import { LayoutWrapper } from "./components/LayoutWrapper";
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "LifeBridge - AI-Powered Cross-Border Mobility Assistant",
-  description: "Transform documents into actionable plans. Upload docs, get checklists, timelines, and risk assessments with AI-powered evidence linking."
+  title: "LifeBridge Crisis Corridor",
+  description:
+    "Production-grade crisis navigation and reunification platform with multi-agent safety recommendations, verified havens, and offline-aware workflows."
 };
 
 import { Toaster } from "react-hot-toast";
 
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
+});
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans bg-gray-50" suppressHydrationWarning>
+      <body className={`${plusJakarta.variable} ${jetBrainsMono.variable} bg-gray-50`} suppressHydrationWarning>
         <LanguageProvider>
           <AuthProvider>
             <LayoutWrapper>

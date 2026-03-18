@@ -73,8 +73,7 @@ export default function VaultPage() {
             setSelectedFile(null);
             setCategory("General");
             loadDocuments();
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to upload document");
         } finally {
             setUploading(false);

@@ -1,5 +1,20 @@
 /** @type {import('next').NextConfig} */
+const distDir = process.env.NEXT_DIST_DIR || ".next";
+
+function normalizeProxyDestination(rawUrl, fallback, suffix) {
+  let url = (rawUrl || fallback || "").trim().replace(/\/$/, "");
+  if (!/^https?:\/\//i.test(url)) {
+    url = `http://${url}`;
+  }
+  // Avoid localhost IPv6 resolution issues in local dev.
+  url = url
+    .replace(/^http:\/\/localhost(?=[:/]|$)/i, "http://127.0.0.1")
+    .replace(/^https:\/\/localhost(?=[:/]|$)/i, "https://127.0.0.1");
+  return `${url}${suffix}`;
+}
+
 const nextConfig = {
+  distDir,
   reactStrictMode: true,
   images: {
     remotePatterns: [
@@ -15,36 +30,27 @@ const nextConfig = {
     return [
       {
         source: '/api/tracker/:path*',
-        destination: (() => {
-          let url = process.env.TRACKER_API_URL || process.env.NEXT_PUBLIC_TRACKER_API_URL || 'http://tracker-api:3100';
-          url = url.replace(/\/$/, '');
-          if (!url.startsWith('http')) {
-            url = 'https://' + url;
-          }
-          return url + '/v1/:path*';
-        })(),
+        destination: normalizeProxyDestination(
+          process.env.TRACKER_API_URL || process.env.NEXT_PUBLIC_TRACKER_API_URL,
+          'http://tracker-api:3100',
+          '/v1/:path*'
+        ),
       },
       {
         source: '/api/docgen/:path*',
-        destination: (() => {
-          let url = process.env.DOCGEN_API_URL || 'http://docgen:8000';
-          url = url.replace(/\/$/, '');
-          if (!url.startsWith('http')) {
-            url = 'https://' + url;
-          }
-          return url + '/:path*';
-        })(),
+        destination: normalizeProxyDestination(
+          process.env.DOCGEN_API_URL,
+          'http://docgen:8000',
+          '/:path*'
+        ),
       },
       {
         source: '/api/:path*',
-        destination: (() => {
-          let url = process.env.NEXT_PUBLIC_API_URL || 'http://api:8000';
-          url = url.replace(/\/$/, '');
-          if (!url.startsWith('http')) {
-            url = 'https://' + url;
-          }
-          return url + '/:path*';
-        })(),
+        destination: normalizeProxyDestination(
+          process.env.NEXT_PUBLIC_API_URL,
+          'http://api:8000',
+          '/:path*'
+        ),
       },
     ];
   },

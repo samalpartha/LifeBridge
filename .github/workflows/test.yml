@@ -56,9 +56,10 @@ jobs:
       - name: Run tests
         env:
           DATABASE_URL: postgresql+psycopg://lifebridge:lifebridge@localhost:5432/lifebridge_test
+          GRADIENT_RUNTIME_MODE: mock
         run: |
           cd apps/api
-          pytest -v --cov=app --cov-report=xml
+          pytest tests -v --cov=app --cov-report=xml
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3
@@ -110,7 +111,7 @@ jobs:
       - name: Test services
         run: |
           docker compose up -d
-          sleep 30
-          curl --fail http://localhost:8000/health || exit 1
+          chmod +x scripts/e2e_smoke.sh
+          ./scripts/e2e_smoke.sh
           docker compose down
 

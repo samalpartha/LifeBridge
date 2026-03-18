@@ -28,8 +28,7 @@ export default function EmploymentPage() {
             setLoading(true);
             const data = await trackerApi.getEmploymentHistory();
             setEntries(data);
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load employment history");
         } finally {
             setLoading(false);

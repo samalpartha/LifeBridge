@@ -1,5 +1,8 @@
 # LifeBridge - Improvements Made
 
+> Refreshed for DigitalOcean Gradient AI Hackathon on 2026-03-18.
+
+
 This document summarizes all improvements made to make the application fully functional.
 
 ## 🎯 Summary

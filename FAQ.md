@@ -1,5 +1,8 @@
 # LifeBridge - Frequently Asked Questions
 
+> Refreshed for DigitalOcean Gradient AI Hackathon on 2026-03-18.
+
+
 ## Getting Started
 
 ### Q: How do I start the application?

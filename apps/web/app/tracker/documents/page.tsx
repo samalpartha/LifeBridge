@@ -24,8 +24,7 @@ export default function DocumentsPage() {
             setLoading(true);
             const data = await trackerApi.getDocuments();
             setDocs(data);
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load documents");
         } finally {
             setLoading(false);

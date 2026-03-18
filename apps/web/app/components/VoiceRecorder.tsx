@@ -43,7 +43,7 @@ export function VoiceRecorder({ onTranscriptChange, initialText = "" }: VoiceRec
             };
 
             recognition.onerror = (event: any) => {
-                console.error("Speech recognition error", event.error);
+                console.warn("Speech recognition error", event.error);
                 setIsRecording(false);
             };
 

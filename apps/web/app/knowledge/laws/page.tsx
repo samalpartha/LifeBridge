@@ -33,8 +33,7 @@ export default function ImmigrationLawsPage() {
             if (!res.ok) throw new Error("Search failed");
             const data = await res.json();
             setResults(data.hits || []);
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError("Failed to fetch results. Please try again.");
         } finally {
             setLoading(false);

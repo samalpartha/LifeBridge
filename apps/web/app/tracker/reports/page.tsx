@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Download, Play, AlertCircle } from "lucide-react";
-import { useLanguage } from "../../contexts/LanguageContext";
+import { FileText, Download, AlertCircle, Sparkles } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function ReportsPage() {
-    const { t } = useLanguage();
     const [templateId, setTemplateId] = useState("case_timeline");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -62,99 +61,97 @@ export default function ReportsPage() {
             document.body.removeChild(a);
 
         } catch (err: any) {
-            console.error(err);
-            setError(err.message || "An error occurred during generation.");
+            const message = err?.message || "An error occurred during generation.";
+            setError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto space-y-8">
-
-                {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Document Generation</h1>
-                    <p className="text-gray-500">Create official PDF reports and summaries from your case data.</p>
+        <div className="mx-auto max-w-6xl space-y-6">
+            <div className="glass-panel shimmer-border animate-enter border-indigo-100 bg-gradient-to-br from-white via-indigo-50/40 to-sky-50/20 p-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white px-3 py-1 text-xs font-semibold text-indigo-700">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Reports Workspace Live
                 </div>
+                <h1 className="mt-3 text-3xl font-bold text-gray-900">Document Generation</h1>
+                <p className="mt-2 max-w-3xl text-gray-600">
+                    Generate polished, downloadable case reports directly from your tracked timeline data.
+                </p>
+            </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {/* Controls */}
+                <div className="space-y-5 lg:col-span-1">
+                    <div className="surface-card p-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Select Template</label>
+                        <select
+                            value={templateId}
+                            onChange={(e) => setTemplateId(e.target.value)}
+                            className="w-full rounded-lg border border-gray-200 bg-white p-2.5 outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="case_timeline">Case Timeline Summary</option>
+                        </select>
 
-                    {/* Controls */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Select Template</label>
-                            <select
-                                value={templateId}
-                                onChange={(e) => setTemplateId(e.target.value)}
-                                className="w-full p-2.5 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                        <div className="mt-6">
+                            <button
+                                onClick={handleGenerate}
+                                disabled={loading}
+                                className="w-full flex items-center justify-center gap-2 rounded-lg bg-blue-600 py-3 font-medium text-white transition hover:bg-blue-700 disabled:opacity-50"
                             >
-                                <option value="case_timeline">Case Timeline Summary</option>
-                                {/* Future templates */}
-                            </select>
+                                {loading ? (
+                                    "Generating..."
+                                ) : (
+                                    <>
+                                        <FileText size={18} />
+                                        Generate PDF
+                                    </>
+                                )}
+                            </button>
+                        </div>
 
-                            <div className="mt-6">
-                                <button
-                                    onClick={handleGenerate}
-                                    disabled={loading}
-                                    className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 font-medium"
-                                >
-                                    {loading ? (
-                                        "Generating..."
-                                    ) : (
-                                        <>
-                                            <FileText size={18} />
-                                            Generate PDF
-                                        </>
-                                    )}
-                                </button>
+                        {error && (
+                            <div className="mt-4 flex items-start gap-2 rounded-lg bg-red-50 p-3 text-sm text-red-600">
+                                <AlertCircle size={16} className="mt-0.5" />
+                                {error}
                             </div>
-
-                            {error && (
-                                <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg flex items-start gap-2">
-                                    <AlertCircle size={16} className="mt-0.5" />
-                                    {error}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <h3 className="text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-                                <Download size={16} />
-                                About DocGen
-                            </h3>
-                            <p className="text-xs text-blue-700 leading-relaxed">
-                                This service uses a robust PDF rendering engine (WeasyPrint) to convert HTML templates into high-fidelity documents.
-                                <br /><br />
-                                <strong>Supported:</strong> CSS Paged Media, CMYK colors, PDF/A compliance readiness.
-                            </p>
-                        </div>
+                        )}
                     </div>
 
-                    {/* Data Editor */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-full flex flex-col">
-                            <div className="flex justify-between items-center mb-4">
-                                <label className="block text-sm font-medium text-gray-700">Template Data (JSON)</label>
-                                <button
-                                    onClick={() => setJsonData(JSON.stringify(JSON.parse(jsonData), null, 4))}
-                                    className="text-xs text-blue-600 hover:underline"
-                                >
-                                    Format JSON
-                                </button>
-                            </div>
-                            <textarea
-                                value={jsonData}
-                                onChange={(e) => setJsonData(e.target.value)}
-                                className="flex-1 w-full p-4 font-mono text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 min-h-[400px]"
-                                spellCheck={false}
-                            />
-                        </div>
+                    <div className="surface-card border-blue-100 bg-blue-50/80 p-4 text-xs text-blue-700">
+                        <h3 className="mb-2 flex items-center gap-2 text-sm font-bold text-blue-800">
+                            <Download size={16} />
+                            About DocGen
+                        </h3>
+                        This service uses WeasyPrint to render high-fidelity PDF case reports from structured JSON.
+                        <br />
+                        <br />
+                        <strong>Supported:</strong> CSS paged media, robust print styles, and production-ready output.
                     </div>
-
                 </div>
 
+                {/* Data Editor */}
+                <div className="lg:col-span-2">
+                    <div className="surface-card h-full p-6">
+                        <div className="mb-4 flex items-center justify-between">
+                            <label className="block text-sm font-medium text-gray-700">Template Data (JSON)</label>
+                            <button
+                                onClick={() => setJsonData(JSON.stringify(JSON.parse(jsonData), null, 4))}
+                                className="text-xs text-blue-600 hover:underline"
+                            >
+                                Format JSON
+                            </button>
+                        </div>
+                        <textarea
+                            value={jsonData}
+                            onChange={(e) => setJsonData(e.target.value)}
+                            className="min-h-[440px] w-full rounded-lg border border-gray-200 bg-gray-50 p-4 font-mono text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            spellCheck={false}
+                        />
+                    </div>
+                </div>
             </div>
         </div>
     );

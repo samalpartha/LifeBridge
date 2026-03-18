@@ -27,8 +27,7 @@ export default function ResidencePage() {
             setLoading(true);
             const data = await trackerApi.getResidenceHistory();
             setEntries(data);
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load residence history");
         } finally {
             setLoading(false);

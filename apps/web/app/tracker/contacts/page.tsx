@@ -29,8 +29,7 @@ export default function ContactsPage() {
             setLoading(true);
             const data = await trackerApi.getContacts();
             setContacts(data);
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to load contacts");
         } finally {
             setLoading(false);

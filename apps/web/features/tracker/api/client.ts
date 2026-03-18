@@ -172,7 +172,15 @@ export const trackerApi = {
     // Cases
     getCases: async (): Promise<CaseEntry[]> => {
         const res = await fetch(`${TRACKER_API_BASE}/cases`);
-        if (!res.ok) throw new Error('Failed to fetch cases');
+        if (!res.ok) {
+            const body = await res.text().catch(() => "");
+            if (res.status >= 500) {
+                throw new Error(
+                    "Failed to fetch cases: tracker service is unavailable. Start tracker-api on port 3100."
+                );
+            }
+            throw new Error(body || "Failed to fetch cases");
+        }
         return res.json();
     },
 

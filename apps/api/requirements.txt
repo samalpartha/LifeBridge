@@ -21,3 +21,6 @@ httpx==0.27.0
 pdf2image==1.17.0
 google-generativeai==0.8.3
 duckduckgo-search==4.1.1
+gradientai>=1.0.0
+geopy==2.4.1
+geoalchemy2==0.14.7

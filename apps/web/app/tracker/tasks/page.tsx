@@ -35,8 +35,7 @@ export default function TasksPage() {
             setLoading(true);
             const data = await trackerApi.getTasks();
             setTasks(data);
-        } catch (error) {
-            console.error(error);
+        } catch {
             toast.error("Failed to load tasks");
         } finally {
             setLoading(false);
@@ -51,8 +50,7 @@ export default function TasksPage() {
             setNewItem({ title: "", description: "", status: "pending", priority: "medium", due_date: "" });
             loadData();
             toast.success("Task created successfully");
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to create task");
         }
     }
@@ -62,8 +60,7 @@ export default function TasksPage() {
         try {
             await trackerApi.updateTask(task.id, { ...task, status: newStatus });
             loadData();
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to update task status");
         }
     }
@@ -82,8 +79,7 @@ export default function TasksPage() {
             setTasks(tasks.filter(t => t.id !== taskToDelete)); // Optimistic delete
             toast.success("Task deleted successfully");
             // loadData(); // Optional: reload to sync
-        } catch (e) {
-            console.error(e);
+        } catch {
             toast.error("Failed to delete task");
             loadData(); // Revert
         }

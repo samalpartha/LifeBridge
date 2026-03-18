@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search, MapPin, Phone, Mail, Globe, Star, Gavel, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useLanguage } from "../contexts/LanguageContext";
+import toast from "react-hot-toast";
 
 // Dynamically import Map to avoid SSR issues
 const AttorneyMap = dynamic(() => import("../components/AttorneyMap"), {
@@ -49,8 +50,7 @@ async function fetchZipLocation(zip: string): Promise<ZipLocation | null> {
             lat: parseFloat(place.latitude),
             lng: parseFloat(place.longitude)
         };
-    } catch (e) {
-        console.error("Zippopotam.us error:", e);
+    } catch {
         return null;
     }
 }
@@ -118,8 +118,8 @@ export default function AttorneysPage() {
                 setShowMap(true);
             }
 
-        } catch (error) {
-            console.error("Failed to fetch attorneys:", error);
+        } catch {
+            toast.error("Failed to fetch attorneys. Please try again.");
         } finally {
             setLoading(false);
         }

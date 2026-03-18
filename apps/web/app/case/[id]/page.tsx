@@ -179,7 +179,7 @@ export default function CasePage() {
 
         setTranslatedOutputs(newOutputs);
       } catch (e) {
-        console.error("Translation failed", e);
+        console.warn("Translation failed", e);
       } finally {
         setIsTranslating(false);
       }
@@ -228,7 +228,7 @@ export default function CasePage() {
     try {
       await updateCaseStory(caseId, newStory);
     } catch (e) {
-      console.error("Failed to save story", e);
+      console.warn("Failed to save story", e);
     } finally {
       setIsSaving(false);
     }
@@ -507,7 +507,7 @@ export default function CasePage() {
                             try {
                               await updateChecklistStatus(i.id, newStatus);
                             } catch (e) {
-                              console.error("Status update failed", e);
+                              console.warn("Status update failed", e);
                               refresh(); // Revert on failure
                             }
                           }}
@@ -562,7 +562,7 @@ export default function CasePage() {
                             try {
                               await updateTimelineStatus(i.id, newStatus);
                             } catch (e) {
-                              console.error("Timeline status update failed", e);
+                              console.warn("Timeline status update failed", e);
                               refresh();
                             }
                           }}

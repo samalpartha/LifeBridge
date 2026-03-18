@@ -42,7 +42,11 @@ export default function CaseDashboard() {
                 setCaseData(c);
                 setEvents(e);
                 setLoading(false);
-            }).catch(console.error);
+            }).catch((error: any) => {
+                const message = error?.message || "Failed to load case details";
+                toast.error(message);
+                setLoading(false);
+            });
         }
     };
 
@@ -107,8 +111,6 @@ export default function CaseDashboard() {
         }
 
         setCheckingStatus(true);
-        console.log("DEBUG: Checking status for caseId:", caseId, "Receipt:", caseData.receipt_number);
-
         // Add a safety timeout to stop the spinning if the server hangs
         const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Request timed out. Please check your internet or try again later.")), 25000)
@@ -119,8 +121,6 @@ export default function CaseDashboard() {
                 trackerApi.checkCaseStatus(caseId),
                 timeoutPromise
             ]) as any;
-
-            console.log("DEBUG: API Response:", result);
 
             const status = result.uscis_status.status;
             const detail = result.uscis_status.detail;
@@ -138,7 +138,6 @@ export default function CaseDashboard() {
                 refreshCase(); // Reload to see new status/event
             }
         } catch (error: any) {
-            console.error("DEBUG: Status Check Failure:", error);
             toast.error(error.message || "Failed to connect to tracker service.");
         } finally {
             setCheckingStatus(false);

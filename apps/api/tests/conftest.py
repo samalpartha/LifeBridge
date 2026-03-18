@@ -3,15 +3,21 @@
 Based on FastAPI best practices:
 https://github.com/fastapi/full-stack-fastapi-template
 """
+import os
+
+os.environ.setdefault("ENVIRONMENT", "local")
+os.environ.setdefault("GRADIENT_RUNTIME_MODE", "mock")
+os.environ.setdefault("GRADIENT_ACCESS_TOKEN", "")
+os.environ.setdefault("GOOGLE_API_KEY", "test-key")
+
 import pytest
+from app.api.crisis import get_db as get_crisis_db
+from app.db.models import Base
+from app.main import app, get_db
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-
-from app.db.models import Base
-from app.main import app, get_db
-
 
 # Use in-memory SQLite for tests
 SQLALCHEMY_DATABASE_URL = "sqlite://"
@@ -45,11 +51,12 @@ def db():
 def client():
     """Create a test client with overridden database."""
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_crisis_db] = override_get_db
     Base.metadata.create_all(bind=engine)
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     Base.metadata.drop_all(bind=engine)
     app.dependency_overrides.clear()
 

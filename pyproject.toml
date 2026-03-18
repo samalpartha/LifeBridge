@@ -38,10 +38,10 @@ testpaths = ["apps/api/tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v --cov=apps/api/app --cov-report=term-missing --cov-report=html"
+addopts = "-v --cov=app --cov-report=term-missing --cov-report=html"
 
 [tool.coverage.run]
-source = ["apps/api/app"]
+source = ["app"]
 omit = [
     "*/tests/*",
     "*/alembic/*",

@@ -1,5 +1,8 @@
 # FastAPI Template Improvements Applied
 
+> Refreshed for DigitalOcean Gradient AI Hackathon on 2026-03-18.
+
+
 Based on the official [FastAPI Full-Stack Template](https://github.com/fastapi/full-stack-fastapi-template) (40k+ ⭐)
 
 ## 🎯 Overview

@@ -707,8 +707,8 @@ curl http://localhost:8000/cases/$CASE_ID/outputs | jq '.'
 ## Support
 
 - **API Documentation:** http://localhost:8000/docs
-- **GitHub:** https://github.com/yourusername/lifebridge
-- **Issues:** https://github.com/yourusername/lifebridge/issues
+- **GitHub:** https://github.com/samalpartha/LifeBridge
+- **Issues:** https://github.com/samalpartha/LifeBridge/issues
 
 ---
 

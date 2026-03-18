@@ -51,6 +51,10 @@ services:
       S3_SECRET_KEY: minio12345
       S3_PUBLIC_BASE_URL: http://localhost:9000/lifebridge
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GRADIENT_RUNTIME_MODE: ${GRADIENT_RUNTIME_MODE:-live}
+      GRADIENT_ACCESS_TOKEN: ${GRADIENT_ACCESS_TOKEN:-}
+      GRADIENT_WORKSPACE_ID: ${GRADIENT_WORKSPACE_ID:-}
+      GRADIENT_KNOWLEDGE_BASE_ID: ${GRADIENT_KNOWLEDGE_BASE_ID:-}
     volumes:
       - ./apps/api:/app
     ports:
@@ -60,6 +64,8 @@ services:
         condition: service_started
       minio:
         condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   web:
@@ -79,6 +85,7 @@ services:
     depends_on:
       - api
       - tracker-api
+      - docgen
     restart: unless-stopped
 
   tracker-db:

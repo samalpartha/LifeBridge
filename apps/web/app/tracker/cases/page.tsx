@@ -4,14 +4,13 @@ import { useState, useEffect } from "react";
 import { Plus, Folder, Calendar, Clock, ChevronRight, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { trackerApi, CaseEntry } from "@/features/tracker/api/client";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function CasesPage() {
-    const router = useRouter();
     const [cases, setCases] = useState<CaseEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     const [newItem, setNewItem] = useState<CaseEntry>({
         title: "",
@@ -29,10 +28,14 @@ export default function CasesPage() {
     async function loadData() {
         try {
             setLoading(true);
+            setLoadError(null);
             const data = await trackerApi.getCases();
             setCases(data);
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            setCases([]);
+            const message = error?.message || "Failed to fetch cases";
+            setLoadError(message);
+            toast.error("Cases service unavailable. Please retry.");
         } finally {
             setLoading(false);
         }
@@ -53,8 +56,7 @@ export default function CasesPage() {
             setIsModalOpen(false);
             setNewItem({ title: "", case_type: "I-130", status: "Open", filing_date: "", priority_date: "", receipt_number: "" });
             loadData();
-        } catch (e) {
-            console.error(e);
+        } catch {
             alert("Failed to add case");
         }
     }
@@ -102,6 +104,20 @@ export default function CasesPage() {
 
                 {loading ? (
                     <div className="text-center py-12 text-gray-500">Loading cases...</div>
+                ) : loadError ? (
+                    <div className="text-center py-12 bg-white rounded-xl border border-amber-200 shadow-sm px-6">
+                        <Folder className="mx-auto h-12 w-12 text-amber-300" />
+                        <h3 className="mt-2 text-sm font-semibold text-amber-900">Case service is unavailable</h3>
+                        <p className="mt-1 text-sm text-amber-700">
+                            {loadError}
+                        </p>
+                        <button
+                            onClick={() => void loadData()}
+                            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100 transition"
+                        >
+                            Retry
+                        </button>
+                    </div>
                 ) : cases.length === 0 ? (
                     <div className="text-center py-12 bg-white rounded-xl border border-gray-200 shadow-sm">
                         <Folder className="mx-auto h-12 w-12 text-gray-300" />

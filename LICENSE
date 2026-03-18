@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2025 LifeBridge
+Copyright (c) 2026 LifeBridge Crisis Corridor Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-Party Licenses
+
+This project uses the following open-source libraries:
+
+- FastAPI (MIT License)
+- Next.js (MIT License)
+- React (MIT License)
+- PostgreSQL (PostgreSQL License)
+- Leaflet (BSD 2-Clause License)
+- Tailwind CSS (MIT License)
+- DigitalOcean Gradient AI SDK (Commercial License)
+
+See individual dependencies for their respective licenses.

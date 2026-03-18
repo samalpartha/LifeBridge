@@ -70,8 +70,6 @@ export default function ChecklistPage() {
                                     if (p.sections.length > 0 && p.sections[0].items.length > 0) {
                                         setPath(p);
                                         setSelectedItem(p.sections[0].items[0]);
-                                    } else {
-                                        console.error("Path has no items");
                                     }
                                 }}
                                 className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 text-left hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20 transition group cursor-pointer w-full"

@@ -1,3 +1,4 @@
+# Refreshed for Gradient hackathon demo operations (2026-03-18)
 .PHONY: up down api web
 
 up:

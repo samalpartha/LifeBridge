@@ -1,205 +1,157 @@
-# [![LifeBridge Icon](https://raw.githubusercontent.com/psama0214/lifebridge/main/apps/web/public/icon.png)](https://life-bridge-peach.vercel.app/) LifeBridge 🌉
+# LifeBridge
 
-### *Bridging Borders with Artificial Intelligence*
+LifeBridge is a crisis navigation and reunification platform built for the **DigitalOcean Gradient AI Hackathon**.
 
-[![Status](https://img.shields.io/badge/Status-Live-green?style=for-the-badge)](https://life-bridge-peach.vercel.app/) [![AI](https://img.shields.io/badge/AI-Gemini%20Pro-blue?style=for-the-badge)](https://deepmind.google/technologies/gemini/) [![License](https://img.shields.io/badge/License-MIT-purple?style=for-the-badge)](LICENSE)
+Repository: [https://github.com/samalpartha/LifeBridge](https://github.com/samalpartha/LifeBridge)
 
+## Hackathon Submission Focus
 
-LifeBridge is an end-to-end, AI-powered platform designed to make global mobility accessible, transparent, and manageable. By leveraging Generative AI (Google Gemini), we transform complex immigration bureaucracies into clear, actionable pathways, removing the barriers that limit human opportunity.
+**One-line pitch:** Move people in crisis to safer nearby options with live AI guidance, risk-aware routes, and family reunification support.
 
----
+**Judge-facing value:**
+- Crisis-first flow (`/crisis-home` -> `/crisis`) optimized for urgent action
+- Live DigitalOcean Gradient runtime with retrieval and traceable tool calls
+- Real-time nearby intelligence + operational fallback for resilience
+- End-to-end workflows: havens, routes, check-ins, beacons, and help matching
 
-## 🚀 Live Access
+## DigitalOcean Gradient Implementation
 
-| Component | URL | Description |
-|-----------|-----|-------------|
-| **Frontend Portal** | [**life-bridge-peach.vercel.app**](https://life-bridge-peach.vercel.app/) | The main user interface for migrants and advisors. |
-| **Tracker API** | [**Docs & Swagger**](https://lifebridge-production.up.railway.app/docs) | Case management, events, and USCIS integration. |
-| **Core AI API** | [**Docs & Swagger**](https://modest-wholeness-production-b698.up.railway.app/docs) | Document reasoning, risk analysis, and LLM orchestration. |
+LifeBridge uses Gradient in live mode through a DigitalOcean Agent endpoint.
 
-*(Click the icon above to launch the application)*
+- Live runtime status: `GET /crisis/runtime`
+- Live connectivity probe: `GET /crisis/runtime/live-check`
+- Agent orchestration query: `POST /crisis/agent/query`
+- Retrieval-aware sources and persisted traces
+- Runtime modes:
+  - `live`: strict live DigitalOcean mode
+  - `mock`: deterministic local fallback
+  - `auto`: live when configured, fallback otherwise
 
----
+Core implementation:
+- `apps/api/app/services/gradient_ai.py`
+- `apps/api/app/api/crisis.py`
+- `apps/api/app/services/crisis_kb_content.py`
+- `apps/api/app/services/evaluations.py`
 
-## 🏗️ Architecture
+## What Is Implemented
 
-LifeBridge uses a distributed microservices architecture to separate concern between real-time user interaction and heavy cognitive processing.
+- Crisis command center pages:
+  - `/crisis-home` (overview and launch)
+  - `/crisis` (live operations console)
+- Safe haven search with verification + service metadata
+- Route generation with risk-aware options
+- Safety check-ins with idempotency behavior
+- Family reunification beacons (`create`, `lookup`, `update`)
+- Nearby help request/offer matching
+- Tracker workspace for case continuity (tasks, notes, history, documents)
+- Knowledge and help surfaces integrated with live runtime indicators
 
-### **Full System Overview**
-High-level view of how the entire ecosystem connects, from the user's browser to our AI and Government integrations.
+## Architecture
 
-```mermaid
-graph TD
-    %% Nodes
-    User(("👤 User"))
-    
-    subgraph Frontend_Vercel ["🖥️ Frontend (Vercel)"]
-        NextJS["Next.js 14 App"]
-    end
-    
-    subgraph Backend_Railway ["⚙️ Backend (Railway)"]
-        Tracker["📄 Tracker API"]
-        Core["🧠 Core AI API"]
-    end
-    
-    subgraph Data_Layer ["💾 Persistence"]
-        DB[("PostgreSQL")]
-        S3[("S3 Storage")]
-    end
-    
-    subgraph External_Services ["🌐 External Integrations"]
-        Gemini["✨ Google Gemini Pro"]
-        USCIS["🏛️ USCIS.gov"]
-    end
+- Frontend: Next.js (`apps/web`)
+- Core API: FastAPI (`apps/api`)
+- Tracker API: FastAPI (`apps/tracker-api`)
+- Doc generation service: FastAPI (`apps/docgen`)
+- Storage layer: PostgreSQL + object storage compatible pattern
 
-    %% Flows
-    User == HTTPS ==> NextJS
-    
-    NextJS -- "REST / JSON" --> Tracker
-    NextJS -- "REST / JSON" --> Core
-    
-    Tracker -- "Read/Write" --> DB
-    Tracker -- "Store Docs" --> S3
-    
-    Tracker -. "Scrape Status" .-> USCIS
-    Core -- "Reasoning" --> Gemini
-    
-    %% Styling
-    classDef primary fill:#2563eb,stroke:#1d4ed8,color:white;
-    classDef secondary fill:#4f46e5,stroke:#4338ca,color:white;
-    classDef db fill:#059669,stroke:#047857,color:white;
-    classDef ext fill:#d97706,stroke:#b45309,color:white;
-    
-    class NextJS primary;
-    class Tracker,Core secondary;
-    class DB,S3 db;
-    class Gemini,USCIS ext;
+## Quick Start
+
+### Option A: Docker
+
+```bash
+cp .env.example .env
+# Fill Gradient credentials for live mode
+docker compose up --build
 ```
 
-### **Frontend Architecture**
-Built on **Next.js 14**, the frontend provides a reactive, "app-like" experience.
+### Option B: Local ports (recommended for demo)
 
-*   **Framework**: Next.js 14 (App Router)
-*   **Styling**: Tailwind CSS + Framer Motion (Glassmorphism design system)
-*   **State**: React Context (Auth, Language) + SWR
-*   **Testing**: Playwright (E2E) + Vitest (Unit)
+```bash
+# Terminal 1: Core API
+CORS_ORIGINS=http://localhost:3009,http://127.0.0.1:3009 \
+./.venv/bin/python -m uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8009 --reload
 
-```mermaid
-graph TD
-    Client["Browser Client"]
-    Vercel["Vercel Edge Network"]
-    
-    subgraph "Next.js Application"
-        Router["App Router"]
-        Pages["Dynamic Pages"]
-        Components["UI Components"]
-        API_Route["Next.js API Proxy"]
-    end
-    
-    Client -->|HTTPS| Vercel
-    Vercel --> Router
-    Router --> Pages
-    Pages --> Components
-    Components -->|Fetch| API_Route
+# Terminal 2: Tracker API
+cd apps/tracker-api
+DATABASE_URL="sqlite:///./tracker.db" ../../.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 3100 --reload
+
+# Terminal 3: Frontend
+cd apps/web
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8009 npm run dev -- -p 3009
 ```
 
-### **Backend Architecture**
-Two specialized **FastAPI** services power the logic, deployed on Railway.
+## Required Environment Variables (Live Gradient)
 
-*   **Tracker Service**: Manages long-lived persistence (User history, Cases, Tasks). Connects to PostgreSQL.
-*   **Core Service**: Stateless intelligence engine. handles OCR, LLM Chains, and RAG.
+Configure one of these live paths:
 
-```mermaid
-graph TD
-    subgraph "Railway Infrastructure"
-        LB_Tracker["LifeBridge Tracker API"]
-        LB_Core["LifeBridge Core AI API"]
-        DB[("PostgreSQL")]
-        S3[("Object Storage (MinIO/S3)")]
-    end
-    
-    API_Route["Frontend Proxy"] -->|Case Data| LB_Tracker
-    API_Route -->|Reasoning| LB_Core
-    
-    LB_Tracker -->|CRUD| DB
-    LB_Core -->|GenAI| Gemini["Google Gemini Pro"]
-    LB_Tracker -->|Files| S3
-    LB_Tracker -->|Scrape| USCIS["USCIS Status Page"]
+- Endpoint mode:
+  - `GRADIENT_AGENT_ENDPOINT`
+  - `GRADIENT_AGENT_ACCESS_KEY`
+- SDK mode:
+  - `GRADIENT_ACCESS_TOKEN`
+  - `GRADIENT_WORKSPACE_ID`
+
+Additional runtime:
+
+```env
+GRADIENT_RUNTIME_MODE=live
+GRADIENT_AGENT_ID=
+GRADIENT_KNOWLEDGE_BASE_ID=
+GRADIENT_DEFAULT_RETRIEVAL_K=8
+GRADIENT_SUB_QUERY_RETRIEVAL_K=12
 ```
 
----
+## Demo Verification Checklist
 
-### **System Node Specification**
-Reflecting our strictly typed, modular design philosophy.
+1. Open `http://localhost:3009/crisis-home`
+2. Launch Crisis Mode and verify live indicators on `/crisis`
+3. Call live runtime probe: `http://127.0.0.1:8009/crisis/runtime/live-check`
+4. Create beacon and open `/reunion/{code}`
+5. Submit help request + offer and verify nearby matching
+6. Open tracker pages and confirm data persists in `tracker.db`
 
-```yaml
-# lifebridge/system/nodes.yaml
-nodes:
-  # -- Frontend Layer --
-  ui:WEB:PORTAL:
-    desc: "Next.js 14 Reactive Client"
-    in: [user_interaction, auth_token]
-    out: [dom_render, api_request]
-    config:
-      framework: "next.js"
-      rendering: "server_side"
+## Testing
 
-  # -- Service Layer --
-  op:TRACKER:API:
-    desc: "Case Management & Persistence"
-    in: [api_request, db_connection]
-    out: [json_response, audit_log]
-    queue:
-      concurrency: 100
-      strategy: "fifo"
+```bash
+# Core API tests
+cd apps/api && ../../.venv/bin/pytest tests -q
 
-  op:CORE:INTELLIGENCE:
-    desc: "Document Reasoning Engine"
-    in: [context_window, pdf_stream]
-    out: [risk_assessment, generated_plan]
-    mapreduce: true
-    queue:
-      concurrency: 10
+# Tracker API tests
+cd apps/tracker-api && ../../.venv/bin/pytest tests -q
 
-  # -- External Integrations --
-  ext:USCIS:SCRAPER:
-    desc: "Government Status Sync"
-    in: [receipt_number]
-    out: [html_content, status_change]
-    queue:
-      rate_limit: "60/min"
+# Docgen tests
+cd apps/docgen && ../../.venv/bin/pytest tests -q
+
+# Frontend build and smoke
+cd apps/web
+npm run build
+npx playwright test tests/smoke.spec.ts
 ```
 
----
+## Important API Endpoints
 
-## 🛠️ Key Technologies
+All crisis endpoints are under `/crisis`:
+- `GET /runtime`
+- `GET /runtime/live-check`
+- `POST /havens`
+- `GET /havens/search`
+- `POST /routes/generate`
+- `POST /checkins`
+- `POST /beacons`
+- `GET /beacons/{beacon_code}`
+- `POST /help/requests`
+- `GET /help/requests/nearby`
+- `POST /help/offers`
+- `GET /help/offers/nearby`
+- `POST /agent/query`
+- `GET /traces`
 
-### **Frontend Excellence**
-*   **Next.js 14**: Server Side Rendering for SEO and speed.
-*   **TailwindCSS**: Rapid, utility-first styling.
-*   **Framer Motion**: Premium animations.
-*   **Lucide React**: Vector iconography.
+## Links
 
-### **Backend Intelligence**
-*   **FastAPI**: Python's modern async framework.
-*   **Google Gemini Pro 1.5**: The brain behind document analysis.
-*   **SQLAlchemy + Pydantic**: Robust data modeling.
-*   **BeautifulSoup4**: Real-time government site scraping.
-*   **Playwright**: For verified end-to-end reliability.
+- GitHub: [https://github.com/samalpartha/LifeBridge](https://github.com/samalpartha/LifeBridge)
+- API docs (local): `http://127.0.0.1:8009/docs`
+- Tracker docs (local): `http://127.0.0.1:3100/docs`
 
----
+## License
 
-## 👥 Team Information
-
-**Partha Sarathi Samal**
-*Lead Architect & Full Stack Engineer*
-Orchestrated the microservices architecture, implemented the comprehensive testing strategy, and led the integration of Google Gemini AI.
-
-**Suresh Kumar Palus**
-*Frontend Lead & UX Designer*
-Designed the premium "Glassmorphism" user interface, developed the dynamic React component library, and ensured a seamless mobile-responsive experience.
-
----
-
-## 📜 License
-MIT License. Open exploration for a global future.
+MIT (`LICENSE`)
